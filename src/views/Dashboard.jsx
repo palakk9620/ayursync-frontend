@@ -134,7 +134,7 @@ const Dashboard = () => {
 
   const fetchRealStats = async (role, email) => {
     try {
-        const response = await axios.post('http://127.0.0.1:5000/api/dashboard-stats', { role, email });
+        const response = await axios.post('https://ayursync-backend.onrender.com/api/dashboard-stats', { role, email });
         if (response.data.success) {
             const data = response.data.stats;
 
@@ -182,7 +182,7 @@ const Dashboard = () => {
 
   const handleAppointmentAction = async (apptId, status) => {
       try {
-          await axios.post('http://127.0.0.1:5000/api/update-appointment-status', { id: apptId, status: status });
+          await axios.post('https://ayursync-backend.onrender.com/api/update-appointment-status', { id: apptId, status: status });
           alert(`Appointment marked as ${status}`);
           setShowDocActiveModal(false);
           fetchRealStats(userRole, localStorage.getItem('userEmail'));
@@ -201,7 +201,7 @@ const Dashboard = () => {
       setUserName(editFormData.name);
       setWelcomeMessage(`Welcome, Dr. ${editFormData.name}`); 
       
-      try { await axios.post('http://127.0.0.1:5000/api/update-doctor-profile', editFormData); } catch(err) {}
+      try { await axios.post('https://ayursync-backend.onrender.com/api/update-doctor-profile', editFormData); } catch(err) {}
 
       alert("Profile Updated Successfully!");
       setShowEditProfileModal(false);
