@@ -188,11 +188,11 @@ const DiseaseSearch = () => {
                 <div style={{marginBottom: '25px', paddingBottom: '20px', borderBottom: '1px solid #eee'}}>
                     
                     {/* FIX APPLIED HERE: Use dangerouslySetInnerHTML */}
-                    <h1 
-                        style={{color: '#004d40', fontSize: '2.2rem', margin: '0 0 20px 0'}}
-                        dangerouslySetInnerHTML={{ __html: result.name }}
-                    >
-                    </h1>
+                    <h1 
+    style={{color: '#004d40', fontSize: '2.2rem', margin: '0 0 20px 0'}}
+    dangerouslySetInnerHTML={{ __html: result.name }}
+>
+</h1>
                     
                     <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px'}}>
                         <div style={{background: '#e3f2fd', padding: '15px 20px', borderRadius: '10px', border: '1px solid #90caf9', flex: '1', minWidth: '180px'}}>
