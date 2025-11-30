@@ -8,7 +8,7 @@ const FindDoctor = () => {
   const location = useLocation(); 
 
   const passedSpecialty = location.state?.specialization || '';
-  const passedDisease = location.state?.disease || '';
+  const passedDisease = location.state?.disease || ''; // This holds the raw HTML string
 
   const [doctors, setDoctors] = useState([]);
   const [filter, setFilter] = useState(passedSpecialty);
@@ -18,23 +18,28 @@ const FindDoctor = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
         try {
-            const res = await axios.get('https://ayursync-backend.onrender.com/api/doctors');
+            const res = await axios.get('http://127.0.0.1:5000/api/doctors');
             let docs = Array.isArray(res.data) ? res.data : [];
 
-            // 1. HARDCODE DELETE
-            docs = docs.filter(d => d.name !== "Ramesh Das" && d.name !== "Rahul Das");
-
-            // 2. GLOBAL DELETE CHECK
+            // --- 1. HARDCODE DELETE & GLOBAL DELETE CHECK ---
+            docs = docs.filter(d => 
+                d.name !== "Ramesh Das" && 
+                d.name !== "Rahul Das"
+            );
             const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
             docs = docs.filter(d => !deletedIds.includes(d.id));
 
-            // 3. LOCAL PROFILE UPDATE
+            // --- 2. LOCAL PROFILE UPDATE ---
             const localDoctorDetails = JSON.parse(localStorage.getItem('doctorDetails'));
             const loggedInRole = localStorage.getItem('userRole');
             const loggedInEmail = localStorage.getItem('userEmail');
 
             if (loggedInRole === 'doctor' && localDoctorDetails) {
-                docs = docs.filter(d => d.email !== loggedInEmail && d.name !== localDoctorDetails.name);
+                docs = docs.filter(d => 
+                    d.email !== loggedInEmail && 
+                    d.name !== localDoctorDetails.name
+                );
+                
                 const myUpdatedProfile = {
                     id: 99999,
                     name: localDoctorDetails.name,
@@ -58,12 +63,18 @@ const FindDoctor = () => {
             
             setDoctors(enhancedDocs);
 
-        } catch (err) { console.error("Error loading doctors", err); }
+        } catch (err) { 
+            console.error("Error loading doctors", err); 
+        }
     };
     fetchDoctors();
   }, []);
 
-  useEffect(() => { if (passedSpecialty) setFilter(passedSpecialty); }, [passedSpecialty]);
+  useEffect(() => {
+    if (passedSpecialty) {
+        setFilter(passedSpecialty);
+    }
+  }, [passedSpecialty]);
 
   const filteredDoctors = doctors.filter(doc => 
     (doc.specialization || '').toLowerCase().includes(filter.toLowerCase()) ||
@@ -71,26 +82,36 @@ const FindDoctor = () => {
   );
 
   const handleBookNow = (doc) => {
-      navigate('/appointment', { state: { doctor: doc, disease: passedDisease } });
+      navigate('/appointment', { 
+        state: { 
+            doctor: doc,         
+            disease: passedDisease 
+        } 
+      });
   };
 
   const handleDeleteDoctor = async (doctorId) => {
       if(window.confirm("Are you sure you want to permanently remove this doctor?")) {
-          const currentDeleted = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
-          if (!currentDeleted.includes(doctorId)) {
-              currentDeleted.push(doctorId);
-              localStorage.setItem('deletedDoctorIds', JSON.stringify(currentDeleted));
+          try {
+              const currentDeleted = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
+              if (!currentDeleted.includes(doctorId)) {
+                  currentDeleted.push(doctorId);
+                  localStorage.setItem('deletedDoctorIds', JSON.stringify(currentDeleted));
+              }
+              setDoctors(doctors.filter(doc => doc.id !== doctorId));
+              alert("Doctor removed globally.");
+          } catch (err) {
+              alert("Error deleting doctor.");
           }
-          setDoctors(doctors.filter(doc => doc.id !== doctorId));
       }
   };
 
   return (
-    // UPDATED: Width set to 1400px for a "Longer" (Wider) look
     <div className="find-doctor-container" style={{maxWidth: '1400px', margin: '0 auto', padding: '30px'}}>
       
-      <div style={{marginBottom: '30px', textAlign: 'center'}}>
+      <div style={{marginBottom: '40px', textAlign: 'center'}}>
         <h2 style={{color: '#004d40', fontSize: '2.5rem', marginBottom: '10px'}}>Find Specialists Near You</h2>
+        
         <input 
             type="text" 
             placeholder="Search by name or specialty..." 
@@ -98,7 +119,17 @@ const FindDoctor = () => {
             onChange={(e) => setFilter(e.target.value)}
             style={{padding: '15px 30px', width: '60%', borderRadius: '50px', border: '1px solid #ccc', fontSize: '1.1rem', marginTop: '10px', outline: 'none', boxShadow: '0 4px 10px rgba(0,0,0,0.05)'}} 
         />
-        {passedDisease && <p style={{color: '#666', fontSize: '1rem', marginTop: '10px'}}>Filtering for: <strong>{passedDisease}</strong></p>}
+        
+        {/* FIX APPLIED HERE: Display "Filtering for: <strong>Asthma</strong>" correctly */}
+        {passedDisease && (
+            <p style={{color: '#666', fontSize: '1rem', marginTop: '10px'}}>
+                Filtering for: 
+                <strong 
+                    dangerouslySetInnerHTML={{ __html: passedDisease }} 
+                    style={{marginLeft: '5px', color: '#004d40'}}
+                />
+            </p>
+        )}
       </div>
 
       <div className="doctors-list" style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
@@ -106,16 +137,15 @@ const FindDoctor = () => {
             <div key={idx} className="doctor-card" style={{
                 display: 'flex', 
                 justifyContent: 'space-between',
-                alignItems: 'center', // Aligns items vertically center
+                alignItems: 'center',
                 background: 'white', 
-                padding: '20px', // REDUCED PADDING (Makes box shorter)
+                padding: '20px', 
                 borderRadius: '15px', 
                 boxShadow: '0 5px 15px rgba(0,0,0,0.05)', 
                 borderLeft: '8px solid #004d40', 
                 position: 'relative'
             }}>
                 
-                {/* 1. Doctor Info */}
                 <div style={{flex: 1, paddingRight: '20px'}}>
                     <div style={{display:'flex', alignItems:'center', gap:'20px', marginBottom:'10px'}}>
                         <div style={{width:'50px', height:'50px', borderRadius:'50%', background:'#e0f2f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.8rem'}}>👨‍⚕️</div>
@@ -134,11 +164,10 @@ const FindDoctor = () => {
                     </div>
                 </div>
 
-                {/* 2. Map & Action - Wider Column, Shorter Map */}
                 <div style={{width: '350px', display:'flex', flexDirection:'column', gap:'10px'}}>
                     <iframe 
                         width="100%" 
-                        height="120" // REDUCED HEIGHT (Makes box shorter)
+                        height="120" 
                         style={{border:0, borderRadius:'10px'}} 
                         loading="lazy"
                         title={`Map for ${doc.hospitalName}`}
@@ -147,7 +176,7 @@ const FindDoctor = () => {
                     </iframe>
                     
                     <button onClick={() => handleBookNow(doc)}
-                        style={{padding: '10px', background: '#004d40', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize:'1rem', transition: 'background 0.2s'}}>
+                        style={{padding: '12px', background: '#004d40', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize:'1rem', transition: 'background 0.2s'}}>
                         Book Appointment
                     </button>
 
