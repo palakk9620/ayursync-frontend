@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import '../App.css'; 
 
-// --- HELPER: Generate Time Options ---
+// USE YOUR LIVE URL
+const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
+
 const generateTimeOptions = () => {
   const options = [];
   for (let i = 0; i < 24 * 2; i++) {
@@ -21,7 +23,6 @@ const generateTimeOptions = () => {
 
 const timeOptions = generateTimeOptions();
 
-// --- MODAL COMPONENT ---
 const EditProfileModal = ({ show, onClose, formData, setFormData, onSave }) => {
   if (!show) return null;
 
@@ -134,34 +135,17 @@ const Dashboard = () => {
 
   const fetchRealStats = async (role, email) => {
     try {
-        const response = await axios.post('https://ayursync-backend.onrender.com/api/dashboard-stats', { role, email });
+        const response = await axios.post(`${RENDER_API_URL}/api/dashboard-stats`, { role, email });
         if (response.data.success) {
             const data = response.data.stats;
-
-            // --- FILTER OUT DELETED DOCTORS HERE ---
+            // Filter out deleted doctors
             const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
-            
-            // Filter the doctors list
             const cleanDoctorsList = (data.active_doctors_list || []).filter(d => !deletedIds.includes(d.id));
             
-            // Recalculate count
-            const cleanDoctorCount = cleanDoctorsList.length;
-            // ----------------------------------------
-
             setStats({
                 ...data,
-                doctorCount: cleanDoctorCount, // Use filtered count
-                doctorsList: cleanDoctorsList, // Use filtered list
-                
-                // Map other stats as usual
-                activeAppointment: data.active_appointment, 
-                pastAppointments: data.past_appointments || [],
-                totalAppCount: data.total_app_count,
-                allAppointments: data.all_appointments || [],
-                patientRecords: data.patient_records || [],
-                systemHealth: data.system_health || { status: 'Operational' },
-                doctorActiveAppts: data.doctor_active_appts || [],
-                efficacyStats: data.efficacy_stats || { success: 0, missed: 0 }
+                doctorCount: cleanDoctorsList.length,
+                doctorsList: cleanDoctorsList
             });
         }
     } catch (error) { console.error("Error fetching stats:", error); }
@@ -182,32 +166,38 @@ const Dashboard = () => {
 
   const handleAppointmentAction = async (apptId, status) => {
       try {
-          await axios.post('https://ayursync-backend.onrender.com/api/update-appointment-status', { id: apptId, status: status });
+          await axios.post(`${RENDER_API_URL}/api/update-appointment-status`, { id: apptId, status: status });
           alert(`Appointment marked as ${status}`);
           setShowDocActiveModal(false);
           fetchRealStats(userRole, localStorage.getItem('userEmail'));
       } catch (err) { alert("Error updating status"); }
   };
 
+  // --- UPDATED HANDLE PROFILE UPDATE (NO LOCAL STORAGE HACKS) ---
   const handleProfileUpdate = async (e) => {
       e.preventDefault();
-      localStorage.setItem('userName', editFormData.name);
-      localStorage.setItem('specialization', editFormData.specialization);
-      localStorage.setItem('hospitalName', editFormData.hospitalName);
-      localStorage.setItem('address', editFormData.address);
-      localStorage.setItem('timings', editFormData.timings);
-      localStorage.setItem('doctorDetails', JSON.stringify(editFormData));
-
-      setUserName(editFormData.name);
-      setWelcomeMessage(`Welcome, Dr. ${editFormData.name}`); 
       
-      try { await axios.post('https://ayursync-backend.onrender.com/api/update-doctor-profile', editFormData); } catch(err) {}
+      try { 
+          // 1. Send Update to Backend (Database)
+          await axios.post(`${RENDER_API_URL}/api/update-doctor-profile`, editFormData); 
+          
+          // 2. Update Local UI State
+          setUserName(editFormData.name);
+          setWelcomeMessage(`Welcome, Dr. ${editFormData.name}`);
+          localStorage.setItem('userName', editFormData.name); // Update session name
+          
+          alert("Profile Updated Successfully! Changes are live.");
+          setShowEditProfileModal(false);
 
-      alert("Profile Updated Successfully!");
-      setShowEditProfileModal(false);
+          // 3. Refresh stats to reflect changes if needed
+          fetchRealStats(userRole, localStorage.getItem('userEmail'));
+
+      } catch(err) {
+          alert("Failed to update profile. Please try again.");
+      }
   };
 
-  // --- MODAL RENDERERS ---
+  // ... [MODAL RENDERERS SAME AS BEFORE] ...
   const MyRecordModal = () => ( <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>📂 My Medical Records</h3><button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments.map((rec, i) => <div key={i} className="modal-item"><p><strong>{rec.date}</strong> - {rec.doctorName}</p><p>{rec.disease}</p></div>)}</div></div></div> );
   const DoctorListModal = () => ( <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Available Doctors</h3><button className="close-btn" onClick={()=>setShowDoctorModal(false)}>✖</button><div className="modal-list">{stats.doctorsList.map((doc, i) => <div key={i} className="modal-item"><p>{doc.name}</p><button className="book-btn-small" onClick={()=>{setShowDoctorModal(false);navigate('/appointment')}}>Book</button></div>)}</div></div></div> );
   const CurrentApptModal = () => ( <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Current Status</h3><button className="close-btn" onClick={()=>setShowCurrentApptModal(false)}>✖</button><div style={{textAlign:'center'}}>{stats.activeAppointment ? <h2>Dr. {stats.activeAppointment.doctor}</h2> : <p>No Active Appointment</p>}</div></div></div> );
@@ -242,7 +232,7 @@ const Dashboard = () => {
         onSave={handleProfileUpdate} 
       />
 
-      {/* 1. HEADER */}
+      {/* HEADER */}
       <header style={{ background: '#004d40', color: 'white', padding: '15px 30px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '1px' }}>🌿 AYURSYNC AI</h2>
         <div style={{ position: 'relative' }}>
@@ -250,7 +240,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* 2. BODY LAYOUT */}
+      {/* BODY */}
       <div className="dashboard-body" style={{ flex: 1, padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 style={{ color: '#004d40', margin: '0 0 10px 0' }}>{welcomeMessage}</h1>
@@ -285,6 +275,7 @@ const Dashboard = () => {
                 )}
                 {(userRole === 'admin' || userRole === 'employee') && (
                     <>
+                        {/* Admin Cards ... */}
                         <div className="stat-box clickable" onClick={() => setShowAdminApptList(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>All Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.allAppointments.length}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowDoctorModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #2ecc71'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Active Doctors</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.doctorCount}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowSystemHealth(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #e74c3c'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>System Health</h4><h2 style={{margin:0, color:'#2ecc71'}}>100%</h2></div>

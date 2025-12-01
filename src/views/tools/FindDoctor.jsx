@@ -3,6 +3,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+// --- Configuration ---
+// USE YOUR LIVE RENDER URL HERE
+const API_BASE_URL = 'https://ayursync-backend.onrender.com'; 
+
 const FindDoctor = () => {
   const navigate = useNavigate();
   const location = useLocation(); 
@@ -11,42 +15,25 @@ const FindDoctor = () => {
   const passedDisease = location.state?.disease || '';
 
   const [doctors, setDoctors] = useState([]);
-  const [filter, setFilter] = useState(passedSpecialty || ''); // Executed search term
-  const [tempFilter, setTempFilter] = useState(passedSpecialty || ''); // Input field state
+  
+  // Search States
+  const [filter, setFilter] = useState(passedSpecialty || '');      
+  const [tempFilter, setTempFilter] = useState(passedSpecialty || ''); 
   
   const userRole = localStorage.getItem('userRole');
 
   useEffect(() => {
-    // We run the fetch and filtering logic here to ensure filter is applied on load
     const fetchDoctors = async () => {
         try {
-            const res = await axios.get('http://127.0.0.1:5000/api/doctors');
+            // 1. Fetch REAL data from Cloud Database
+            const res = await axios.get(`${API_BASE_URL}/api/doctors`);
             let docs = Array.isArray(res.data) ? res.data : [];
 
-            // --- LOCAL STORAGE SYNC (Keep your existing logic) ---
-            const localDoctorDetails = JSON.parse(localStorage.getItem('doctorDetails'));
-            const loggedInRole = localStorage.getItem('userRole');
-            const loggedInEmail = localStorage.getItem('userEmail');
+            // 2. GLOBAL DELETE CHECK (Keep this for Admin power)
+            const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
+            docs = docs.filter(d => !deletedIds.includes(d.id));
 
-            if (loggedInRole === 'doctor' && localDoctorDetails) {
-                docs = docs.filter(d => d.email !== loggedInEmail && d.name !== localDoctorDetails.name);
-                
-                const myUpdatedProfile = {
-                    id: 99999,
-                    name: localDoctorDetails.name,
-                    specialization: localDoctorDetails.specialization || 'General Physician',
-                    hospitalName: localDoctorDetails.hospitalName,
-                    address: localDoctorDetails.address,
-                    timings: localDoctorDetails.timings,
-                    email: loggedInEmail, 
-                    rating: '5.0', 
-                    reviews: 0,
-                    mapLink: '', 
-                };
-                docs.unshift(myUpdatedProfile);
-            }
-            // ------------------------------------------------
-
+            // 3. Add Random Ratings (Visual Polish)
             const enhancedDocs = docs.map(doc => ({
                 ...doc,
                 rating: doc.rating || (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1),
@@ -55,45 +42,44 @@ const FindDoctor = () => {
             
             setDoctors(enhancedDocs);
 
-        } catch (err) { 
-            console.error("Error loading doctors", err); 
-        }
+        } catch (err) { console.error("Error loading doctors", err); }
     };
     fetchDoctors();
-  }, []); // Run only on initial mount
+  }, []);
+
+  // Update input if navigating from another page
+  useEffect(() => { 
+      if (passedSpecialty) {
+          setFilter(passedSpecialty);
+          setTempFilter(passedSpecialty);
+      }
+  }, [passedSpecialty]);
 
   const handleSearchClick = () => {
-      setFilter(tempFilter); // Set the executed search term
+      setFilter(tempFilter);
   };
 
-  // The filtering happens whenever the 'filter' state changes (either on load or button click)
+  const handleKeyPress = (e) => {
+      if (e.key === 'Enter') handleSearchClick();
+  };
+
   const filteredDoctors = doctors.filter(doc => 
     (doc.specialization || '').toLowerCase().includes(filter.toLowerCase()) ||
     (doc.name || '').toLowerCase().includes(filter.toLowerCase())
   );
 
   const handleBookNow = (doc) => {
-      navigate('/appointment', { 
-        state: { 
-            doctor: doc,         
-            disease: passedDisease 
-        } 
-      });
+      navigate('/appointment', { state: { doctor: doc, disease: passedDisease } });
   };
 
   const handleDeleteDoctor = async (doctorId) => {
       if(window.confirm("Are you sure you want to permanently remove this doctor?")) {
-          try {
-              const currentDeleted = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
-              if (!currentDeleted.includes(doctorId)) {
-                  currentDeleted.push(doctorId);
-                  localStorage.setItem('deletedDoctorIds', JSON.stringify(currentDeleted));
-              }
-              setDoctors(doctors.filter(doc => doc.id !== doctorId));
-              alert("Doctor removed globally.");
-          } catch (err) {
-              alert("Error deleting doctor.");
+          const currentDeleted = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
+          if (!currentDeleted.includes(doctorId)) {
+              currentDeleted.push(doctorId);
+              localStorage.setItem('deletedDoctorIds', JSON.stringify(currentDeleted));
           }
+          setDoctors(doctors.filter(doc => doc.id !== doctorId));
       }
   };
 
@@ -103,47 +89,56 @@ const FindDoctor = () => {
       <div style={{marginBottom: '30px', textAlign: 'center'}}>
         <h2 style={{color: '#004d40', fontSize: '2.5rem', marginBottom: '10px'}}>Find Specialists Near You</h2>
         
-        {/* NEW: Flex Container for Search Bar and Button */}
-        <div style={{display: 'flex', gap: '15px', justifyContent: 'center', maxWidth: '700px', margin: '10px auto 0 auto'}}>
+        {/* SEARCH BAR + BUTTON */}
+        <div style={{display: 'flex', gap: '15px', justifyContent: 'center', maxWidth: '800px', margin: '0 auto'}}>
             <input 
                 type="text" 
                 placeholder="Search by name or specialty..." 
                 value={tempFilter} 
-                onChange={(e) => setTempFilter(e.target.value)} // Update temp filter state
+                onChange={(e) => setTempFilter(e.target.value)}
+                onKeyPress={handleKeyPress}
                 style={{
-                    padding: '12px 20px', 
+                    padding: '15px 30px', 
                     width: '100%', 
-                    borderRadius: '25px', 
+                    borderRadius: '50px', 
                     border: '1px solid #ccc', 
-                    fontSize: '1rem', 
-                    outline: 'none',
+                    fontSize: '1.1rem', 
+                    outline: 'none', 
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
                     flexGrow: 1
                 }} 
             />
-            <button
-                onClick={handleSearchClick} // Execute filter on button click
+            <button 
+                onClick={handleSearchClick}
                 style={{
-                    padding: '12px 25px', 
+                    padding: '15px 40px', 
                     background: '#004d40', 
                     color: 'white', 
                     border: 'none', 
-                    borderRadius: '25px', 
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
+                    borderRadius: '50px', 
+                    fontWeight: 'bold', 
+                    fontSize: '1.1rem', 
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
                 }}
             >
                 Find
             </button>
         </div>
-        {passedDisease && <p style={{color: '#666', fontSize: '1rem', marginTop: '10px'}}>Filtering for: <strong>{passedDisease}</strong></p>}
+
+        {passedDisease && (
+            <p style={{color: '#666', fontSize: '1rem', marginTop: '15px'}}>
+                Filtering for: <strong dangerouslySetInnerHTML={{ __html: passedDisease }} style={{color: '#004d40'}} />
+            </p>
+        )}
       </div>
 
       <div className="doctors-list" style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
-        {filteredDoctors.length === 0 ? <p style={{textAlign:'center'}}>No doctors found.</p> : filteredDoctors.map((doc, idx) => (
+        {filteredDoctors.length === 0 ? <p style={{textAlign:'center', fontSize:'1.2rem', color:'#666', marginTop:'20px'}}>No doctors found.</p> : filteredDoctors.map((doc, idx) => (
             <div key={idx} className="doctor-card" style={{
                 display: 'flex', 
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: 'center', 
                 background: 'white', 
                 padding: '20px', 
                 borderRadius: '15px', 
@@ -152,12 +147,17 @@ const FindDoctor = () => {
                 position: 'relative'
             }}>
                 
+                {/* 1. Doctor Info */}
                 <div style={{flex: 1, paddingRight: '20px'}}>
                     <div style={{display:'flex', alignItems:'center', gap:'20px', marginBottom:'10px'}}>
                         <div style={{width:'50px', height:'50px', borderRadius:'50%', background:'#e0f2f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.8rem'}}>👨‍⚕️</div>
                         <div>
-                            <h3 style={{margin: 0, color: '#004d40', fontSize: '1.4rem'}}>Dr. {doc.name}</h3>
-                            <p style={{margin: 0, fontWeight:'bold', color: '#555', fontSize: '1rem'}}>{doc.specialization}</p>
+                            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                                <h3 style={{margin: 0, color: '#004d40', fontSize: '1.4rem'}}>Dr. {doc.name}</h3>
+                                {/* VISUAL INDICATOR FOR ACTIVE DOCTOR */}
+                                <span style={{background:'#e8f5e9', color:'#2ecc71', padding:'2px 8px', borderRadius:'10px', fontSize:'0.75rem', fontWeight:'bold', border:'1px solid #c8e6c9'}}>● Available</span>
+                            </div>
+                            <p style={{margin: '5px 0 0 0', fontWeight:'bold', color: '#555', fontSize: '1rem'}}>{doc.specialization}</p>
                         </div>
                     </div>
                     <div style={{fontSize:'0.95rem', color:'#666', lineHeight:'1.5'}}>
@@ -170,6 +170,7 @@ const FindDoctor = () => {
                     </div>
                 </div>
 
+                {/* 2. Map & Action */}
                 <div style={{width: '350px', display:'flex', flexDirection:'column', gap:'10px'}}>
                     <iframe 
                         width="100%" 
@@ -182,7 +183,7 @@ const FindDoctor = () => {
                     </iframe>
                     
                     <button onClick={() => handleBookNow(doc)}
-                        style={{padding: '12px', background: '#004d40', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize:'1rem', transition: 'background 0.2s'}}>
+                        style={{padding: '10px', background: '#004d40', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize:'1rem', transition: 'background 0.2s'}}>
                         Book Appointment
                     </button>
 
