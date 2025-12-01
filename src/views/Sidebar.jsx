@@ -7,9 +7,11 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const userName = localStorage.getItem('userName') || 'User';
 
+  // --- UPDATED LOGOUT FUNCTION ---
   const handleLogout = () => {
     localStorage.clear();
-    navigate('/login');
+    // Navigate to Landing Page ('/') and replace history to prevent "Back" button
+    navigate('/', { replace: true });
   };
 
   const navLinkStyle = ({ isActive }) => ({
@@ -40,7 +42,7 @@ const Sidebar = () => {
         🌿 AyurSync AI
       </h2>
 
-      {/* NAVIGATION LINKS - Moved UP (removed flex:1 and justifyContent:center) */}
+      {/* NAVIGATION LINKS */}
       <nav style={{ display: 'flex', flexDirection: 'column' }}>
         
         <NavLink to="/dashboard" className="nav-link" style={navLinkStyle}>
@@ -65,7 +67,7 @@ const Sidebar = () => {
 
       </nav>
 
-      {/* USER & LOGOUT (Footer - Pushed to bottom) */}
+      {/* USER & LOGOUT */}
       <div style={{ marginTop: 'auto', borderTop:'1px solid rgba(255,255,255,0.2)', paddingTop:'20px' }}>
         <p style={{ fontSize: '0.9rem', marginBottom: '10px', opacity: 0.8 }}>Logged in as: <strong>{userName}</strong></p>
         <button 

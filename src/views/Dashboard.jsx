@@ -7,7 +7,6 @@ import '../App.css';
 // LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
-// --- TIME OPTIONS & EDIT PROFILE MODAL (Kept same) ---
 const generateTimeOptions = () => {
   const options = [];
   for (let i = 0; i < 24 * 2; i++) {
@@ -129,11 +128,28 @@ const Dashboard = () => {
             const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
             const cleanDoctorsList = (data.active_doctors_list || []).filter(d => !deletedIds.includes(d.id));
             
+            let currentAppt = data.active_appointment;
+            if (currentAppt && currentAppt.date && currentAppt.time) {
+                const now = new Date();
+                const [timeStr, period] = currentAppt.time.split(' ');
+                let [hours, minutes] = timeStr.split(':');
+                hours = parseInt(hours);
+                if (period === 'PM' && hours !== 12) hours += 12;
+                if (period === 'AM' && hours === 12) hours = 0;
+                
+                const apptDate = new Date(currentAppt.date);
+                apptDate.setHours(hours, parseInt(minutes), 0);
+
+                if (now > apptDate) {
+                    currentAppt = null;
+                }
+            }
+
             setStats({
                 ...data,
                 doctorCount: cleanDoctorsList.length,
                 doctorsList: cleanDoctorsList,
-                activeAppointment: data.active_appointment, 
+                activeAppointment: currentAppt, 
                 pastAppointments: data.past_appointments || [],
                 totalAppCount: data.total_app_count || 0,
                 allAppointments: data.all_appointments || [],
@@ -146,7 +162,13 @@ const Dashboard = () => {
     } catch (error) { console.error("Error fetching stats:", error); }
   };
 
-  const handleLogout = () => { localStorage.clear(); navigate('/'); };
+  // --- CHANGED: LOGOUT LOGIC ---
+  const handleLogout = () => { 
+      localStorage.clear(); 
+      // Use replace: true to prevent back button
+      navigate('/', { replace: true }); 
+  };
+
   const goToPage = (path, name) => {
     const now = new Date();
     const newEntry = { module: name, date: now.toLocaleDateString(), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
@@ -184,22 +206,19 @@ const Dashboard = () => {
   };
 
   // --- MODAL RENDERERS ---
-
-  // 1. MY RECORDS (Show Doctor Name - Card Style)
   const MyRecordModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}>
-        <div className="modal-content" onClick={e=>e.stopPropagation()}>
+        <div className="modal-content" onClick={e=>e.stopPropagation()} style={{maxWidth:'600px'}}>
             <h3>📂 My Medical Records</h3>
             <button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button>
             <div className="modal-list">
                 {stats.pastAppointments?.map((rec, i) => (
-                    <div key={i} className="modal-item" style={{background:'white', border:'1px solid #eee', borderRadius:'8px', padding:'15px', marginBottom:'10px', boxShadow:'0 2px 5px rgba(0,0,0,0.05)', borderLeft:'4px solid #004d40'}}>
-                        <div style={{display:'flex', justifyContent:'space-between', marginBottom:'5px'}}>
-                            <span style={{fontWeight:'bold', color:'#004d40'}}>Dr. {rec.doctorName}</span>
-                            <span style={{fontSize:'0.9rem', color:'#666'}}>{rec.date}</span>
+                    <div key={i} className="modal-item" style={{background:'white', border:'1px solid #eee', borderRadius:'8px', padding:'20px', marginBottom:'15px', boxShadow:'0 2px 5px rgba(0,0,0,0.05)', borderLeft:'5px solid #004d40'}}>
+                        <p style={{fontWeight:'bold', color:'#004d40', fontSize:'1.1rem', marginBottom:'8px'}}>Dr. {rec.doctorName}</p>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                            <p style={{margin:0, fontSize:'0.95rem', color:'#555'}}><strong>Reason:</strong> {rec.disease}</p>
+                            <span style={{fontSize:'0.9rem', color:'#888', fontWeight:'bold'}}>{rec.date}</span>
                         </div>
-                        <p style={{margin:'5px 0', fontSize:'0.9rem'}}><strong>Reason:</strong> {rec.disease}</p>
-                        <span style={{fontSize:'0.8rem', padding:'2px 8px', background:'#e0f2f1', borderRadius:'5px', color:'#004d40'}}>Confirmed</span>
                     </div>
                 )) || <p>No records</p>}
             </div>
@@ -207,7 +226,6 @@ const Dashboard = () => {
     </div> 
   );
 
-  // 2. ACTIVE DOCTORS (Show Specialization under Name)
   const DoctorListModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -229,9 +247,10 @@ const Dashboard = () => {
     </div> 
   );
 
-  // 3. CURRENT APPOINTMENT (Clean Date/Time/Disease Split)
   const CurrentApptModal = () => {
-      // Data is sent separately now: activeAppointment.date and activeAppointment.time
+      let displayDate = stats.activeAppointment?.date;
+      let displayTime = stats.activeAppointment?.time;
+      if (displayTime && displayTime.includes(' at ')) { const parts = displayTime.split(' at '); displayDate = parts[0]; displayTime = parts[1]; }
       return (
         <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}>
             <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -242,8 +261,8 @@ const Dashboard = () => {
                         <>
                             <div className="detail-row"><strong>Doctor:</strong> <span style={{color:'#004d40'}}>Dr. {stats.activeAppointment.doctor}</span></div>
                             <div className="detail-row"><strong>Disease:</strong> {stats.activeAppointment.disease || 'General Checkup'}</div>
-                            <div className="detail-row"><strong>Date:</strong> {stats.activeAppointment.date}</div>
-                            <div className="detail-row"><strong>Time:</strong> {stats.activeAppointment.time}</div>
+                            <div className="detail-row"><strong>Date:</strong> {displayDate}</div>
+                            <div className="detail-row"><strong>Time:</strong> {displayTime}</div>
                         </>
                     ) : (
                         <div style={{textAlign:'center'}}>
@@ -257,7 +276,6 @@ const Dashboard = () => {
       );
   };
 
-  // 4. HISTORY (Card Style with Doctor & Date)
   const HistoryModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -297,7 +315,6 @@ const Dashboard = () => {
       {showPatientRecordsModal && <PatientRecordsModal />}
       {showDocActiveModal && <DoctorActiveModal />}
       {showEfficacyModal && <EfficacyModal />}
-      
       <EditProfileModal show={showEditProfileModal} onClose={() => setShowEditProfileModal(false)} formData={editFormData} setFormData={setEditFormData} onSave={handleProfileUpdate} />
 
       <header style={{ background: '#004d40', color: 'white', padding: '15px 30px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -350,7 +367,6 @@ const Dashboard = () => {
             </div>
         </div>
 
-        {/* 5. RECENT ACTIVITY HISTORY */}
         <div className="history-section" style={{background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box'}}>
             <h3 style={{ color: '#444', borderBottom: '2px solid #f0f0f0', paddingBottom: '15px', marginBottom: '15px', marginTop: 0 }}>Recent Activity History</h3>
             <div className="history-list" style={{maxHeight: '250px', overflowY: 'auto', paddingRight: '10px'}}>
