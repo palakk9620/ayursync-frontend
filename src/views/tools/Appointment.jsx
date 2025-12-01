@@ -13,24 +13,22 @@ const Appointment = () => {
   
   // State to toggle between Form and Receipt
   const [showReceipt, setShowReceipt] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState(null); // Stores confirmed data
+  const [bookingDetails, setBookingDetails] = useState(null); 
 
   const [formData, setFormData] = useState({
-    fullName: '', // New Field
-    dob: '',      // New Field
-    age: '',      // New Field (Auto-calculated)
+    fullName: '', 
+    dob: '',      
+    age: '',      
     doctorName: '',
     hospitalName: '', 
     date: '',
     time: '',
     disease: '',
-    phone: ''
+    phone: '' // Will store only the 10 digits
   });
 
-  // Load User Data & Doctors
   useEffect(() => {
     const storedName = localStorage.getItem('userName') || '';
-    // Pre-fill name
     setFormData(prev => ({ ...prev, fullName: storedName }));
 
     const fetchDoctors = async () => {
@@ -38,7 +36,6 @@ const Appointment = () => {
             const res = await axios.get(`${RENDER_API_URL}/api/doctors`);
             setDoctors(res.data);
 
-            // Handle Pre-selection from Find Doctor page
             if (location.state) {
                 const { doctor, disease } = location.state;
                 let newFormUpdates = {};
@@ -58,11 +55,9 @@ const Appointment = () => {
     fetchDoctors();
   }, [location.state]);
 
-  // --- AGE CALCULATION LOGIC ---
+  // --- AGE CALCULATION ---
   const handleDobChange = (e) => {
       const dobValue = e.target.value;
-      
-      // Calculate Age
       if (dobValue) {
           const today = new Date();
           const birthDate = new Date(dobValue);
@@ -71,10 +66,21 @@ const Appointment = () => {
           if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
               age--;
           }
-          // Update state
           setFormData(prev => ({ ...prev, dob: dobValue, age: age.toString() }));
       } else {
           setFormData(prev => ({ ...prev, dob: dobValue, age: '' }));
+      }
+  };
+
+  // --- PHONE NUMBER HANDLER (Restrict to 10 digits) ---
+  const handlePhoneChange = (e) => {
+      const value = e.target.value;
+      // Regex to allow only numbers
+      if (/^\d*$/.test(value)) {
+          // Stop updating if length > 10
+          if (value.length <= 10) {
+              setFormData({ ...formData, phone: value });
+          }
       }
   };
 
@@ -86,7 +92,6 @@ const Appointment = () => {
   const handleDoctorChange = (e) => {
       const selectedName = e.target.value;
       const docObj = doctors.find(d => d.name === selectedName);
-      
       if (docObj) {
           setFormData({
               ...formData, 
@@ -102,24 +107,29 @@ const Appointment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Prepare data
+    
+    // Validation: Check if phone is exactly 10 digits
+    if (formData.phone.length !== 10) {
+        alert("Please enter a valid 10-digit phone number.");
+        return;
+    }
+
     const bookingPayload = { 
-        patientName: formData.fullName, // Use the editable full name
+        patientName: formData.fullName, 
         userEmail: localStorage.getItem('userEmail'),
-        ...formData 
+        ...formData,
+        phone: `+91 ${formData.phone}` // Send full format to backend
     };
 
     try {
         const res = await axios.post(`${RENDER_API_URL}/api/book-appointment`, bookingPayload);
         if (res.data.success) {
-            // SAVE DATA FOR RECEIPT AND SHOW IT
             setBookingDetails(bookingPayload);
             setShowReceipt(true);
         }
     } catch (err) { alert("Booking Failed."); }
   };
 
-  // --- PRINT FUNCTION ---
   const handlePrint = () => {
       window.print();
   };
@@ -128,7 +138,6 @@ const Appointment = () => {
   if (showReceipt && bookingDetails) {
       return (
           <div className="receipt-container" style={{maxWidth: '600px', margin: '40px auto', background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 5px 25px rgba(0,0,0,0.1)', borderTop:'8px solid #004d40'}}>
-              {/* CSS to hide everything else when printing */}
               <style>
                 {`
                   @media print {
@@ -175,40 +184,21 @@ const Appointment = () => {
       
       <form onSubmit={handleSubmit} style={{display:'grid', gap:'20px'}}>
         
-        {/* 1. FULL NAME (TOP) */}
+        {/* 1. FULL NAME */}
         <div>
             <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Patient Full Name</label>
-            <input 
-                type="text" 
-                placeholder="Enter full name"
-                required 
-                style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', fontSize:'1rem'}}
-                value={formData.fullName} 
-                onChange={(e) => setFormData({...formData, fullName: e.target.value})} 
-            />
+            <input type="text" placeholder="Enter full name" required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', fontSize:'1rem'}} value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
         </div>
 
-        {/* 2. DOB & AGE (Auto Calculate) */}
+        {/* 2. DOB & AGE */}
         <div style={{display:'grid', gridTemplateColumns:'2fr 1fr', gap:'20px'}}>
             <div>
                 <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Date of Birth</label>
-                <input 
-                    type="date" 
-                    required 
-                    style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', fontSize:'1rem'}}
-                    value={formData.dob} 
-                    onChange={handleDobChange} 
-                />
+                <input type="date" required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', fontSize:'1rem'}} value={formData.dob} onChange={handleDobChange} />
             </div>
             <div>
                 <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Age</label>
-                <input 
-                    type="text" 
-                    readOnly 
-                    placeholder="Auto"
-                    style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', background:'#f0f0f0', color:'#555', fontSize:'1rem'}}
-                    value={formData.age} 
-                />
+                <input type="text" readOnly placeholder="Auto" style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', background:'#f0f0f0', color:'#555', fontSize:'1rem'}} value={formData.age} />
             </div>
         </div>
 
@@ -218,16 +208,14 @@ const Appointment = () => {
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
             <div>
                 <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Select Doctor</label>
-                <select style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}}
-                    value={formData.doctorName} onChange={handleDoctorChange} required>
+                <select style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}} value={formData.doctorName} onChange={handleDoctorChange} required>
                     <option value="">-- Choose Doctor --</option>
                     {doctors.map(doc => <option key={doc.id} value={doc.name}>Dr. {doc.name} ({doc.specialization})</option>)}
                 </select>
             </div>
             <div>
                 <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Hospital / Clinic</label>
-                <input type="text" readOnly style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', background:'#f0f0f0', color:'#555'}}
-                    value={formData.hospitalName || "Select a doctor first"} />
+                <input type="text" readOnly style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc', background:'#f0f0f0', color:'#555'}} value={formData.hospitalName || "Select a doctor first"} />
             </div>
         </div>
 
@@ -235,29 +223,57 @@ const Appointment = () => {
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
             <div>
                 <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Appointment Date</label>
-                <input type="date" required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}}
-                    value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
+                <input type="date" required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
             </div>
             <div>
                 <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Time Slot</label>
-                <select required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}}
-                    value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})}>
+                <select required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}} value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})}>
                     <option value="">-- Select Time --</option>
                     {slots.map((slot, i) => <option key={i} value={slot}>{slot}</option>)}
                 </select>
             </div>
         </div>
 
-        {/* 5. Reason & Phone */}
+        {/* 5. Reason */}
         <div>
             <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Disease / Symptoms</label>
-            <input type="text" placeholder="e.g. High Fever, Chest Pain" required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}}
-                value={formData.disease} onChange={(e) => setFormData({...formData, disease: e.target.value})} />
+            <input type="text" placeholder="e.g. High Fever, Chest Pain" required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}} value={formData.disease} onChange={(e) => setFormData({...formData, disease: e.target.value})} />
         </div>
+
+        {/* 6. PHONE NUMBER (Fixed +91 & 10 Digits) */}
         <div>
             <label style={{fontWeight:'bold', display:'block', marginBottom:'5px'}}>Phone Number</label>
-            <input type="tel" placeholder="+91..." required style={{width:'100%', padding:'12px', borderRadius:'8px', border:'1px solid #ccc'}}
-                value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+            <div style={{display: 'flex', alignItems: 'center', border: '1px solid #ccc', borderRadius: '8px', background:'white'}}>
+                {/* Visual Prefix */}
+                <span style={{
+                    padding: '12px 15px', 
+                    background: '#f0f0f0', 
+                    borderRight: '1px solid #ccc', 
+                    borderTopLeftRadius:'8px', 
+                    borderBottomLeftRadius:'8px', 
+                    color: '#555', 
+                    fontWeight: 'bold'
+                }}>
+                    +91
+                </span>
+                
+                {/* Restricted Input */}
+                <input 
+                    type="tel" 
+                    placeholder="XXXXXXXXXX" 
+                    required 
+                    style={{
+                        border: 'none', 
+                        padding: '12px', 
+                        width: '100%', 
+                        outline: 'none', 
+                        borderRadius: '0 8px 8px 0', 
+                        fontSize:'1rem'
+                    }}
+                    value={formData.phone} 
+                    onChange={handlePhoneChange} 
+                />
+            </div>
         </div>
 
         <button type="submit" style={{width:'100%', padding:'15px', background:'#004d40', color:'white', border:'none', borderRadius:'8px', fontSize:'1.1rem', fontWeight:'bold', cursor:'pointer', marginTop:'10px'}}>
