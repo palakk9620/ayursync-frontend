@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { FaStethoscope, FaBrain, FaPills } from 'react-icons/fa';
 
-// LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
 const SymptomAnalyzer = () => { 
@@ -17,107 +17,99 @@ const SymptomAnalyzer = () => {
     try {
         const response = await axios.post(`${RENDER_API_URL}/api/analyze-symptoms`, { symptoms });
         if (response.data.success) {
-            setTimeout(() => { setResult(response.data.data); setLoading(false); }, 800);
+            setTimeout(() => { setResult(response.data.data); setLoading(false); }, 500);
         }
-    } catch (err) { alert("Error analyzing."); setLoading(false); }
+    } catch (err) { alert("Error analyzing. Please try again."); setLoading(false); }
   };
 
-  // Handle Enter Key
   const handleKeyDown = (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          handleAnalyze();
-      }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAnalyze();
+    }
   };
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       
-      {/* 1. FULL WIDTH HEADER */}
-      <div style={{ width: '100%', background: '#004d40', color: 'white', padding: '50px 20px', textAlign: 'center', marginBottom: '40px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '3rem', fontWeight: '800' }}>AI Symptom Analyzer</h1>
+      <div style={{ width: '100%', background: '#004d40', color: 'white', padding: '40px 20px', textAlign: 'center', marginBottom: '40px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+        <h1 style={{ margin: '0 0 10px 0', fontSize: '2.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <FaBrain style={{ marginRight: '15px' }} /> AI Symptom Analyzer
+        </h1>
         <p style={{ margin: '0', fontSize: '1.2rem', opacity: 0.9 }}>Describe your symptoms, and our AI will suggest potential conditions.</p>
       </div>
 
-      {/* 2. WIDER CONTAINER */}
-      <div style={{ width: '100%', maxWidth: '1000px', padding: '0 30px', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', maxWidth: '900px', padding: '0 20px', boxSizing: 'border-box' }}>
         
-        <div className="analyzer-box" style={{ background: 'white', padding: '50px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-            <p style={{color: '#004d40', marginBottom: '15px', fontWeight:'bold', fontSize:'1.3rem'}}>Enter your symptoms:</p>
+        {/* SMALLER INPUT BOX */}
+        <div style={{ background: 'white', padding: '30px', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0,0,0,0.08)', maxWidth: '700px', margin: '0 auto' }}>
+            <p style={{color: '#004d40', marginBottom: '15px', fontWeight:'bold', fontSize: '1.1rem', display: 'flex', alignItems: 'center'}}>
+              <FaStethoscope style={{marginRight: '10px'}}/> Enter your symptoms:
+            </p>
             
             <textarea 
-                rows="4" 
+                rows="5" 
                 placeholder="e.g. I have a severe headache on one side and feel nauseous..." 
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 onKeyDown={handleKeyDown}
                 style={{
                     width: '100%', 
-                    padding: '20px', 
-                    borderRadius: '15px', 
+                    padding: '15px', 
+                    borderRadius: '10px', 
                     border: '2px solid #e0e0e0', 
-                    fontSize: '1.2rem', 
+                    fontSize: '1rem', 
                     resize: 'none', 
                     outline: 'none', 
                     boxSizing:'border-box',
                     fontFamily: 'inherit'
                 }}
             />
-            <button onClick={handleAnalyze} disabled={loading}
+            <button onClick={handleAnalyze} disabled={loading || !symptoms.trim()}
                 style={{
-                    marginTop: '30px', 
+                    marginTop: '20px', 
                     width: '100%', 
-                    padding: '20px', 
+                    padding: '15px', 
                     background: loading ? '#ccc' : '#004d40', 
                     color: 'white', 
                     border: 'none', 
-                    borderRadius: '15px', 
-                    fontSize: '1.3rem', 
+                    borderRadius: '10px', 
+                    fontSize: '1.1rem', 
                     fontWeight: 'bold', 
-                    cursor: loading ? 'not-allowed' : 'pointer',
+                    cursor: loading || !symptoms.trim() ? 'not-allowed' : 'pointer',
                     transition: 'background 0.2s'
                 }}
             >
                 {loading ? 'Analyzing...' : 'Analyze Health Condition'}
             </button>
+            <p style={{ textAlign: 'center', color: '#888', marginTop: '10px', fontSize: '0.8rem' }}>
+              Press <strong>Enter</strong> to analyze
+            </p>
         </div>
 
         {result && (
-            <div className="result-box" style={{marginTop: '50px', width: '100%', animation: 'fadeIn 0.5s ease', marginBottom: '50px'}}>
-                <div style={{background: '#e0f2f1', padding: '40px', borderRadius: '20px', borderLeft: '10px solid #004d40'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px'}}>
+            <div style={{marginTop: '40px', width: '100%', animation: 'fadeIn 0.6s ease', marginBottom: '40px'}}>
+                <div style={{background: '#fff', padding: '30px', borderRadius: '20px', borderLeft: '10px solid #004d40', boxShadow: '0 10px 30px rgba(0,0,0,0.1)'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px'}}>
                         <div>
-                            <h4 style={{margin: 0, color: '#555', textTransform: 'uppercase', fontSize: '1rem', letterSpacing:'1px'}}>POTENTIAL CONDITION</h4>
-                            <h1 style={{margin: '10px 0 0 0', color: '#004d40', fontSize: '3rem'}}>{result.disease}</h1>
+                            <h4 style={{margin: '0 0 5px 0', color: '#555', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '1px'}}>Potential Condition</h4>
+                            <h1 style={{margin: 0, color: '#004d40', fontSize: '2.2rem'}}>{result.disease}</h1>
                         </div>
-                        <span style={{padding: '10px 25px', borderRadius: '30px', fontWeight: 'bold', background: 'white', color: result.risk === 'High' ? 'red' : '#2e7d32', fontSize:'1.1rem', boxShadow:'0 2px 5px rgba(0,0,0,0.1)'}}>
+                        <span style={{padding: '8px 20px', borderRadius: '30px', fontWeight: 'bold', background: result.risk === 'High' ? '#ffebee' : '#e8f5e9', color: result.risk === 'High' ? 'red' : 'green', fontSize: '1rem'}}>
                             Risk: {result.risk}
                         </span>
                     </div>
-                    
-                    <hr style={{ border: 'none', borderTop: '1px solid #b2dfdb', margin: '30px 0' }} />
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
-                        <div><h4 style={{ color: '#004d40', margin: '0 0 10px 0', fontSize:'1.2rem' }}>🩺 Recommended Specialist</h4><p style={{ fontWeight: 'bold', fontSize: '1.4rem' }}>{result.specialty}</p></div>
-                        <div><h4 style={{ color: '#004d40', margin: '0 0 10px 0', fontSize:'1.2rem' }}>💊 Advice</h4><p style={{ fontSize: '1.2rem', lineHeight:'1.6' }}>{result.advice}</p></div>
+                    <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '25px 0' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+                        <div><h4 style={{ color: '#004d40', margin: '0 0 10px 0', fontSize:'1.1rem' }}>🩺 Recommended Specialist</h4><p style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#333', margin: 0 }}>{result.specialty}</p></div>
+                        <div><h4 style={{ color: '#004d40', margin: '0 0 10px 0', fontSize:'1.1rem' }}>💊 Advice</h4><p style={{ fontSize: '1.1rem', lineHeight: '1.5' }}>{result.advice}</p></div>
                     </div>
-
-                    {/* 3. DYNAMIC FIND BUTTON */}
-                    <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                    <div style={{ textAlign: 'center', marginTop: '35px' }}>
                         <button 
                             onClick={() => navigate('/find-doctors', { state: { specialization: result.specialty, disease: result.disease } })}
-                            style={{ 
-                                padding: '18px 40px', 
-                                background: 'white', 
-                                border: '3px solid #004d40', 
-                                color: '#004d40', 
-                                fontWeight: '800', 
-                                borderRadius: '50px', 
-                                cursor: 'pointer',
-                                fontSize: '1.2rem' 
-                            }}
+                            style={{ padding: '15px 35px', border: 'none', background: '#004d40', color: 'white', fontWeight: 'bold', borderRadius: '50px', cursor: 'pointer', fontSize: '1.1rem', boxShadow: '0 5px 15px rgba(0,77,64,0.4)' }}
                         >
-                            Find {result.specialty} Near Me &rarr;
+                            Find {result.specialty} near you {'->'}
                         </button>
                     </div>
                 </div>
