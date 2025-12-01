@@ -7,6 +7,7 @@ import '../App.css';
 // LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
+// --- TIME OPTIONS & EDIT PROFILE MODAL (Kept same) ---
 const generateTimeOptions = () => {
   const options = [];
   for (let i = 0; i < 24 * 2; i++) {
@@ -182,9 +183,9 @@ const Dashboard = () => {
       setShowEditProfileModal(false);
   };
 
-  // --- UPDATED MODAL RENDERERS ---
+  // --- MODAL RENDERERS ---
 
-  // 1. MY RECORDS (Card Style)
+  // 1. MY RECORDS (Show Doctor Name - Card Style)
   const MyRecordModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -206,7 +207,7 @@ const Dashboard = () => {
     </div> 
   );
 
-  // 2. ACTIVE DOCTORS (With Specialization)
+  // 2. ACTIVE DOCTORS (Show Specialization under Name)
   const DoctorListModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -228,19 +229,9 @@ const Dashboard = () => {
     </div> 
   );
 
-  // 3. CURRENT APPOINTMENT (Clean Date/Time Split)
+  // 3. CURRENT APPOINTMENT (Clean Date/Time/Disease Split)
   const CurrentApptModal = () => {
-      // Safety check: if time comes as "Date at Time", split it.
-      let displayDate = stats.activeAppointment?.date;
-      let displayTime = stats.activeAppointment?.time;
-
-      // Fallback if backend sent combined string
-      if (displayTime && displayTime.includes(' at ')) {
-          const parts = displayTime.split(' at ');
-          displayDate = parts[0];
-          displayTime = parts[1];
-      }
-
+      // Data is sent separately now: activeAppointment.date and activeAppointment.time
       return (
         <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}>
             <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -251,8 +242,8 @@ const Dashboard = () => {
                         <>
                             <div className="detail-row"><strong>Doctor:</strong> <span style={{color:'#004d40'}}>Dr. {stats.activeAppointment.doctor}</span></div>
                             <div className="detail-row"><strong>Disease:</strong> {stats.activeAppointment.disease || 'General Checkup'}</div>
-                            <div className="detail-row"><strong>Date:</strong> {displayDate}</div>
-                            <div className="detail-row"><strong>Time:</strong> {displayTime}</div>
+                            <div className="detail-row"><strong>Date:</strong> {stats.activeAppointment.date}</div>
+                            <div className="detail-row"><strong>Time:</strong> {stats.activeAppointment.time}</div>
                         </>
                     ) : (
                         <div style={{textAlign:'center'}}>
@@ -287,7 +278,6 @@ const Dashboard = () => {
     </div> 
   );
 
-  // ... [Admin Modals remain same] ...
   const AdminApptListModal = () => ( <div className="modal-overlay" onClick={() => setShowAdminApptList(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>All Appointments</h3><button className="close-btn" onClick={()=>setShowAdminApptList(false)}>✖</button><div className="modal-list">{stats.allAppointments?.map((a,i)=><div key={i} className="modal-item">{a.patient_name}</div>) || <p>No appointments</p>}</div></div></div> );
   const AdminApptDetailModal = () => ( <div className="modal-overlay" onClick={() => setShowApptDetail(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Details</h3><button className="close-btn" onClick={()=>setShowApptDetail(false)}>✖</button></div></div> );
   const SystemHealthModal = () => ( <div className="modal-overlay" onClick={() => setShowSystemHealth(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>System Health</h3><button className="close-btn" onClick={()=>setShowSystemHealth(false)}>✖</button><div style={{textAlign:'center'}}><h2>100% Operational</h2></div></div></div> );
@@ -307,6 +297,7 @@ const Dashboard = () => {
       {showPatientRecordsModal && <PatientRecordsModal />}
       {showDocActiveModal && <DoctorActiveModal />}
       {showEfficacyModal && <EfficacyModal />}
+      
       <EditProfileModal show={showEditProfileModal} onClose={() => setShowEditProfileModal(false)} formData={editFormData} setFormData={setEditFormData} onSave={handleProfileUpdate} />
 
       <header style={{ background: '#004d40', color: 'white', padding: '15px 30px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
