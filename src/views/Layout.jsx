@@ -1,19 +1,32 @@
 // src/views/Layout.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import '../App.css'; 
 
 const Layout = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <div className="app-container" style={{ display: 'flex', height: '100vh', width: '100vw' }}>
-      {/* Sidebar is always visible in this layout */}
-      <div className="sidebar-container" style={{ width: '250px', flexShrink: 0 }}>
+    <div className="app-container">
+      
+      {/* 1. MOBILE HEADER (Only visible on small screens via CSS) */}
+      <div className="mobile-header">
+        <button className="menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          {isMobileMenuOpen ? '✖' : '☰'}
+        </button>
+        <span style={{ fontWeight: 'bold', color: 'white', fontSize: '1.2rem' }}>AyurSync AI</span>
+      </div>
+
+      {/* 2. SIDEBAR WRAPPER */}
+      {/* On mobile, this becomes a drawer that slides in */}
+      <div className={`sidebar-wrapper ${isMobileMenuOpen ? 'active' : ''}`}>
         <Sidebar />
       </div>
 
-      {/* The Tool Page loads here */}
-      <div className="main-content" style={{ flex: 1, overflowY: 'auto', background: '#f4f6f8', padding: '20px' }}>
-        <Outlet /> 
+      {/* 3. MAIN CONTENT */}
+      <div className="main-content" onClick={() => setIsMobileMenuOpen(false)}>
+        <Outlet />
       </div>
     </div>
   );

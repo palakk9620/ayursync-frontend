@@ -1,15 +1,13 @@
 // src/views/Sidebar.jsx
 import React from 'react';
-import { NavLink } from 'react-router-dom'; // Removed useNavigate as we use window.location
+import { NavLink } from 'react-router-dom'; 
 import '../App.css'; 
 
 const Sidebar = () => {
   const userName = localStorage.getItem('userName') || 'User';
 
-  // --- UPDATED: HARD LOGOUT ---
   const handleLogout = () => {
     localStorage.clear();
-    // Force full reload to clear history stack so Back button fails
     window.location.href = '/'; 
   };
 
@@ -27,14 +25,15 @@ const Sidebar = () => {
 
   return (
     <div className="sidebar" style={{
-        width: '250px', 
+        width: '100%', // CHANGED: Changed from 250px to 100% for flexibility
         height: '100%', 
         background: '#004d40', 
         color: 'white', 
         display: 'flex', 
         flexDirection: 'column',
         padding: '20px',
-        boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+        boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
+        boxSizing: 'border-box' // ADDED: Prevents padding from breaking the width
     }}>
       <h2 style={{ marginBottom: '20px', textAlign: 'center', borderBottom:'1px solid rgba(255,255,255,0.2)', paddingBottom:'20px', margin: '0 0 20px 0' }}>
         🌿 AyurSync AI
