@@ -162,11 +162,10 @@ const Dashboard = () => {
     } catch (error) { console.error("Error fetching stats:", error); }
   };
 
-  // --- CHANGED: LOGOUT LOGIC ---
+  // --- UPDATED: HARD LOGOUT ---
   const handleLogout = () => { 
       localStorage.clear(); 
-      // Use replace: true to prevent back button
-      navigate('/', { replace: true }); 
+      window.location.href = '/'; // Force reload
   };
 
   const goToPage = (path, name) => {
