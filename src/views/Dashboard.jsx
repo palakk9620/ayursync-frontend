@@ -7,7 +7,6 @@ import '../App.css';
 // LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
-// ... (Time Options & EditProfileModal Code - Same as before) ...
 const generateTimeOptions = () => {
   const options = [];
   for (let i = 0; i < 24 * 2; i++) {
@@ -77,7 +76,6 @@ const Dashboard = () => {
     doctorActiveAppts: [], efficacyStats: { success: 0, missed: 0 }
   });
 
-  // Modal States
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCurrentApptModal, setShowCurrentApptModal] = useState(false);
@@ -184,9 +182,9 @@ const Dashboard = () => {
       setShowEditProfileModal(false);
   };
 
-  // --- MODALS (UPDATED WITH YOUR REQUIREMENTS) ---
+  // --- UPDATED MODAL RENDERERS ---
 
-  // 1. MY RECORDS (Show Doctor Name)
+  // 1. MY RECORDS (Card Style)
   const MyRecordModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -194,10 +192,13 @@ const Dashboard = () => {
             <button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button>
             <div className="modal-list">
                 {stats.pastAppointments?.map((rec, i) => (
-                    <div key={i} className="modal-item">
-                        <p style={{fontWeight:'bold', color:'#004d40'}}>Dr. {rec.doctorName}</p>
-                        <p style={{fontSize:'0.9rem'}}>{rec.date} - {rec.time}</p>
-                        <p style={{fontSize:'0.9rem', color:'#555'}}>Disease: {rec.disease}</p>
+                    <div key={i} className="modal-item" style={{background:'white', border:'1px solid #eee', borderRadius:'8px', padding:'15px', marginBottom:'10px', boxShadow:'0 2px 5px rgba(0,0,0,0.05)', borderLeft:'4px solid #004d40'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', marginBottom:'5px'}}>
+                            <span style={{fontWeight:'bold', color:'#004d40'}}>Dr. {rec.doctorName}</span>
+                            <span style={{fontSize:'0.9rem', color:'#666'}}>{rec.date}</span>
+                        </div>
+                        <p style={{margin:'5px 0', fontSize:'0.9rem'}}><strong>Reason:</strong> {rec.disease}</p>
+                        <span style={{fontSize:'0.8rem', padding:'2px 8px', background:'#e0f2f1', borderRadius:'5px', color:'#004d40'}}>Confirmed</span>
                     </div>
                 )) || <p>No records</p>}
             </div>
@@ -205,7 +206,7 @@ const Dashboard = () => {
     </div> 
   );
 
-  // 2. ACTIVE DOCTORS (Show Specialization under Name)
+  // 2. ACTIVE DOCTORS (With Specialization)
   const DoctorListModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -213,10 +214,10 @@ const Dashboard = () => {
             <button className="close-btn" onClick={()=>setShowDoctorModal(false)}>✖</button>
             <div className="modal-list">
                 {stats.doctorsList?.map((doc, i) => (
-                    <div key={i} className="modal-item">
+                    <div key={i} className="modal-item" style={{background:'white', border:'1px solid #eee', borderRadius:'8px', padding:'15px', marginBottom:'10px', borderLeft:'4px solid #2ecc71'}}>
                         <div style={{textAlign:'left'}}>
                             <h4 style={{margin:'0', color:'#004d40'}}>{doc.name}</h4>
-                            <p style={{margin:'5px 0', color:'#666', fontSize:'0.9rem'}}>{doc.specialization}</p>
+                            <p style={{margin:'5px 0', color:'#666', fontSize:'0.9rem', fontWeight:'bold'}}>{doc.specialization}</p>
                             <small>📍 {doc.location}</small>
                         </div>
                         {userRole !== 'admin' && <button className="book-btn-small" onClick={()=>{setShowDoctorModal(false);navigate('/appointment')}}>Book</button>}
@@ -227,32 +228,45 @@ const Dashboard = () => {
     </div> 
   );
 
-  // 3. CURRENT APPOINTMENT (Show Name, Disease, Time, Date)
-  const CurrentApptModal = () => ( 
-    <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}>
-        <div className="modal-content" onClick={e=>e.stopPropagation()}>
-            <h3>Current Appointment</h3>
-            <button className="close-btn" onClick={()=>setShowCurrentApptModal(false)}>✖</button>
-            <div style={{textAlign:'left', padding:'10px'}}>
-                {stats.activeAppointment ? (
-                    <>
-                        <div className="detail-row"><strong>Doctor:</strong> <span style={{color:'#004d40'}}>Dr. {stats.activeAppointment.doctor}</span></div>
-                        <div className="detail-row"><strong>Disease:</strong> {stats.activeAppointment.disease || 'General Checkup'}</div>
-                        <div className="detail-row"><strong>Date:</strong> {stats.activeAppointment.date}</div>
-                        <div className="detail-row"><strong>Time:</strong> {stats.activeAppointment.time}</div>
-                    </>
-                ) : (
-                    <div style={{textAlign:'center'}}>
-                        <p>No Active Appointment</p>
-                        <button className="book-btn-small" onClick={()=>{setShowCurrentApptModal(false);navigate('/appointment')}}>Book New</button>
-                    </div>
-                )}
-            </div>
-        </div>
-    </div> 
-  );
+  // 3. CURRENT APPOINTMENT (Clean Date/Time Split)
+  const CurrentApptModal = () => {
+      // Safety check: if time comes as "Date at Time", split it.
+      let displayDate = stats.activeAppointment?.date;
+      let displayTime = stats.activeAppointment?.time;
 
-  // 4. HISTORY (Show Date and Doctor Name)
+      // Fallback if backend sent combined string
+      if (displayTime && displayTime.includes(' at ')) {
+          const parts = displayTime.split(' at ');
+          displayDate = parts[0];
+          displayTime = parts[1];
+      }
+
+      return (
+        <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}>
+            <div className="modal-content" onClick={e=>e.stopPropagation()}>
+                <h3>Current Appointment</h3>
+                <button className="close-btn" onClick={()=>setShowCurrentApptModal(false)}>✖</button>
+                <div style={{textAlign:'left', padding:'10px'}}>
+                    {stats.activeAppointment ? (
+                        <>
+                            <div className="detail-row"><strong>Doctor:</strong> <span style={{color:'#004d40'}}>Dr. {stats.activeAppointment.doctor}</span></div>
+                            <div className="detail-row"><strong>Disease:</strong> {stats.activeAppointment.disease || 'General Checkup'}</div>
+                            <div className="detail-row"><strong>Date:</strong> {displayDate}</div>
+                            <div className="detail-row"><strong>Time:</strong> {displayTime}</div>
+                        </>
+                    ) : (
+                        <div style={{textAlign:'center'}}>
+                            <p>No Active Appointment</p>
+                            <button className="book-btn-small" onClick={()=>{setShowCurrentApptModal(false);navigate('/appointment')}}>Book New</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div> 
+      );
+  };
+
+  // 4. HISTORY (Card Style with Doctor & Date)
   const HistoryModal = () => ( 
     <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}>
         <div className="modal-content" onClick={e=>e.stopPropagation()}>
@@ -260,9 +274,12 @@ const Dashboard = () => {
             <button className="close-btn" onClick={()=>setShowHistoryModal(false)}>✖</button>
             <div className="modal-list">
                 {stats.pastAppointments?.map((a,i) => (
-                    <div key={i} className="modal-item" style={{display:'flex', justifyContent:'space-between'}}>
-                        <span style={{fontWeight:'bold'}}>{a.date}</span>
-                        <span style={{color:'#004d40'}}>Dr. {a.doctorName}</span>
+                    <div key={i} className="modal-item" style={{background:'white', border:'1px solid #eee', borderRadius:'8px', padding:'15px', marginBottom:'10px', borderLeft:'4px solid #3498db', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                        <div>
+                             <p style={{margin:0, fontWeight:'bold', color:'#004d40'}}>Dr. {a.doctorName}</p>
+                             <small style={{color:'#666'}}>{a.disease || 'Consultation'}</small>
+                        </div>
+                        <span style={{fontWeight:'bold', fontSize:'0.9rem'}}>{a.date}</span>
                     </div>
                 )) || <p>No history</p>}
             </div>
@@ -270,7 +287,7 @@ const Dashboard = () => {
     </div> 
   );
 
-  // ... (Other Admin Modals same as before) ...
+  // ... [Admin Modals remain same] ...
   const AdminApptListModal = () => ( <div className="modal-overlay" onClick={() => setShowAdminApptList(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>All Appointments</h3><button className="close-btn" onClick={()=>setShowAdminApptList(false)}>✖</button><div className="modal-list">{stats.allAppointments?.map((a,i)=><div key={i} className="modal-item">{a.patient_name}</div>) || <p>No appointments</p>}</div></div></div> );
   const AdminApptDetailModal = () => ( <div className="modal-overlay" onClick={() => setShowApptDetail(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Details</h3><button className="close-btn" onClick={()=>setShowApptDetail(false)}>✖</button></div></div> );
   const SystemHealthModal = () => ( <div className="modal-overlay" onClick={() => setShowSystemHealth(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>System Health</h3><button className="close-btn" onClick={()=>setShowSystemHealth(false)}>✖</button><div style={{textAlign:'center'}}><h2>100% Operational</h2></div></div></div> );
@@ -279,7 +296,6 @@ const Dashboard = () => {
   const EfficacyModal = () => ( <div className="modal-overlay" onClick={() => setShowEfficacyModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Efficacy</h3><button className="close-btn" onClick={()=>setShowEfficacyModal(false)}>✖</button></div></div> );
 
   return (
-    // ... (Layout structure same as before) ...
     <div className="dashboard-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f4f6f8' }}>
       {showMyRecordModal && <MyRecordModal />}
       {showDoctorModal && <DoctorListModal />}
@@ -343,6 +359,7 @@ const Dashboard = () => {
             </div>
         </div>
 
+        {/* 5. RECENT ACTIVITY HISTORY */}
         <div className="history-section" style={{background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box'}}>
             <h3 style={{ color: '#444', borderBottom: '2px solid #f0f0f0', paddingBottom: '15px', marginBottom: '15px', marginTop: 0 }}>Recent Activity History</h3>
             <div className="history-list" style={{maxHeight: '250px', overflowY: 'auto', paddingRight: '10px'}}>
