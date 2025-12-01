@@ -7,10 +7,10 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const userName = localStorage.getItem('userName') || 'User';
 
-  // --- UPDATED LOGOUT FUNCTION ---
+  // --- UPDATED LOGOUT LOGIC ---
   const handleLogout = () => {
     localStorage.clear();
-    // Navigate to Landing Page ('/') and replace history to prevent "Back" button
+    // Navigate to Landing Page ('/') and use 'replace: true' to prevent going back
     navigate('/', { replace: true });
   };
 
