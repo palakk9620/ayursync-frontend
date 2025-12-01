@@ -10,7 +10,7 @@ const Layout = () => {
   return (
     <div className="app-container">
       
-      {/* 1. MOBILE HEADER (Only visible on small screens via CSS) */}
+      {/* MOBILE HEADER (Hidden on Desktop via CSS) */}
       <div className="mobile-header">
         <button className="menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? '✖' : '☰'}
@@ -18,13 +18,13 @@ const Layout = () => {
         <span style={{ fontWeight: 'bold', color: 'white', fontSize: '1.2rem' }}>AyurSync AI</span>
       </div>
 
-      {/* 2. SIDEBAR WRAPPER */}
-      {/* On mobile, this becomes a drawer that slides in */}
+      {/* SIDEBAR WRAPPER */}
+      {/* Desktop: Always visible (CSS). Mobile: Toggled by class 'active' */}
       <div className={`sidebar-wrapper ${isMobileMenuOpen ? 'active' : ''}`}>
         <Sidebar />
       </div>
 
-      {/* 3. MAIN CONTENT */}
+      {/* MAIN CONTENT */}
       <div className="main-content" onClick={() => setIsMobileMenuOpen(false)}>
         <Outlet />
       </div>

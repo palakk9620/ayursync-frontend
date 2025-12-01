@@ -1,6 +1,6 @@
 // src/views/Sidebar.jsx
 import React from 'react';
-import { NavLink } from 'react-router-dom'; 
+import { NavLink, useNavigate } from 'react-router-dom';
 import '../App.css'; 
 
 const Sidebar = () => {
@@ -25,15 +25,14 @@ const Sidebar = () => {
 
   return (
     <div className="sidebar" style={{
-        width: '100%', // CHANGED: Changed from 250px to 100% for flexibility
+        width: '100%', // Let the parent container decide the width (Desktop: 250px, Mobile: Drawer)
         height: '100%', 
         background: '#004d40', 
         color: 'white', 
         display: 'flex', 
         flexDirection: 'column',
         padding: '20px',
-        boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
-        boxSizing: 'border-box' // ADDED: Prevents padding from breaking the width
+        boxSizing: 'border-box'
     }}>
       <h2 style={{ marginBottom: '20px', textAlign: 'center', borderBottom:'1px solid rgba(255,255,255,0.2)', paddingBottom:'20px', margin: '0 0 20px 0' }}>
         🌿 AyurSync AI
@@ -49,20 +48,7 @@ const Sidebar = () => {
 
       <div style={{ marginTop: 'auto', borderTop:'1px solid rgba(255,255,255,0.2)', paddingTop:'20px' }}>
         <p style={{ fontSize: '0.9rem', marginBottom: '10px', opacity: 0.8 }}>Logged in as: <strong>{userName}</strong></p>
-        <button 
-          onClick={handleLogout}
-          style={{
-            width: '100%',
-            padding: '10px',
-            background: '#c62828',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
-          Logout
-        </button>
+        <button onClick={handleLogout} style={{ width: '100%', padding: '10px', background: '#c62828', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Logout</button>
       </div>
     </div>
   );
