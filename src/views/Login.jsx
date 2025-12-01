@@ -1,5 +1,5 @@
 // src/views/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../App.css'; 
@@ -50,6 +50,18 @@ const Login = () => {
 
   const [formData, setFormData] = useState(initialFormData);
 
+  // --- NEW: WAKE UP SERVER IMMEDIATELY ON LOAD ---
+  useEffect(() => {
+      // This sends a silent "ping" to the server as soon as the Login page opens.
+      // It wakes up the free server while the user is typing, saving ~50 seconds of waiting.
+      const wakeUpServer = async () => {
+          try { await axios.get(`${RENDER_API_URL}/health`); } 
+          catch (e) { /* Ignore errors, this is just a wake-up call */ }
+      };
+      wakeUpServer();
+  }, []);
+  // -----------------------------------------------
+
   const validatePassword = (pass) => {
     const regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
     return regex.test(pass);
@@ -76,16 +88,12 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Prevent double clicks
     if (loading) return;
-
-    // Start Loading
     setLoading(true);
 
     try {
       if (!isLogin) {
         // --- REGISTER LOGIC ---
-        
         if (!validatePassword(formData.password)) {
             alert("Password must be at least 8 characters, include a number and a special character.");
             setIsPasswordValid(false);
@@ -117,7 +125,6 @@ const Login = () => {
         
       } else {
         // --- LOGIN LOGIC ---
-        
         const response = await axios.post(`${RENDER_API_URL}/api/login`, {
             email: formData.email, password: formData.password
         });
@@ -132,7 +139,6 @@ const Login = () => {
             if (hasVisitedBefore) localStorage.setItem('welcomeType', 'back'); 
             else { localStorage.setItem('welcomeType', 'first'); localStorage.setItem('visited_' + userEmail, 'true'); }
 
-            // Navigate immediately
             navigate('/dashboard'); 
             return; 
         }
@@ -140,7 +146,6 @@ const Login = () => {
     } catch (error) {
       alert(error.response?.data?.message || "Connection Error");
     } finally {
-        // Stop loading unless successful login redirected
         if (!isLogin || (isLogin && !localStorage.getItem('userEmail'))) {
              setLoading(false);
         }
