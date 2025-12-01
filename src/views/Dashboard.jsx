@@ -7,7 +7,7 @@ import '../App.css';
 // LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
-// ... [Keep timeOptions and EditProfileModal exactly as they were] ...
+// ... (Time Options & EditProfileModal Code - Same as before) ...
 const generateTimeOptions = () => {
   const options = [];
   for (let i = 0; i < 24 * 2; i++) {
@@ -77,6 +77,7 @@ const Dashboard = () => {
     doctorActiveAppts: [], efficacyStats: { success: 0, missed: 0 }
   });
 
+  // Modal States
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCurrentApptModal, setShowCurrentApptModal] = useState(false);
@@ -133,7 +134,7 @@ const Dashboard = () => {
                 ...data,
                 doctorCount: cleanDoctorsList.length,
                 doctorsList: cleanDoctorsList,
-                activeAppointment: data.active_appointment, // Contains extra fields now
+                activeAppointment: data.active_appointment, 
                 pastAppointments: data.past_appointments || [],
                 totalAppCount: data.total_app_count || 0,
                 allAppointments: data.all_appointments || [],
@@ -183,7 +184,7 @@ const Dashboard = () => {
       setShowEditProfileModal(false);
   };
 
-  // --- UPDATED MODAL RENDERERS ---
+  // --- MODALS (UPDATED WITH YOUR REQUIREMENTS) ---
 
   // 1. MY RECORDS (Show Doctor Name)
   const MyRecordModal = () => ( 
@@ -269,6 +270,7 @@ const Dashboard = () => {
     </div> 
   );
 
+  // ... (Other Admin Modals same as before) ...
   const AdminApptListModal = () => ( <div className="modal-overlay" onClick={() => setShowAdminApptList(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>All Appointments</h3><button className="close-btn" onClick={()=>setShowAdminApptList(false)}>✖</button><div className="modal-list">{stats.allAppointments?.map((a,i)=><div key={i} className="modal-item">{a.patient_name}</div>) || <p>No appointments</p>}</div></div></div> );
   const AdminApptDetailModal = () => ( <div className="modal-overlay" onClick={() => setShowApptDetail(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Details</h3><button className="close-btn" onClick={()=>setShowApptDetail(false)}>✖</button></div></div> );
   const SystemHealthModal = () => ( <div className="modal-overlay" onClick={() => setShowSystemHealth(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>System Health</h3><button className="close-btn" onClick={()=>setShowSystemHealth(false)}>✖</button><div style={{textAlign:'center'}}><h2>100% Operational</h2></div></div></div> );
@@ -277,7 +279,7 @@ const Dashboard = () => {
   const EfficacyModal = () => ( <div className="modal-overlay" onClick={() => setShowEfficacyModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Efficacy</h3><button className="close-btn" onClick={()=>setShowEfficacyModal(false)}>✖</button></div></div> );
 
   return (
-    // ... [Keeping layout same] ...
+    // ... (Layout structure same as before) ...
     <div className="dashboard-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f4f6f8' }}>
       {showMyRecordModal && <MyRecordModal />}
       {showDoctorModal && <DoctorListModal />}
@@ -289,7 +291,6 @@ const Dashboard = () => {
       {showPatientRecordsModal && <PatientRecordsModal />}
       {showDocActiveModal && <DoctorActiveModal />}
       {showEfficacyModal && <EfficacyModal />}
-      
       <EditProfileModal show={showEditProfileModal} onClose={() => setShowEditProfileModal(false)} formData={editFormData} setFormData={setEditFormData} onSave={handleProfileUpdate} />
 
       <header style={{ background: '#004d40', color: 'white', padding: '15px 30px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -333,6 +334,7 @@ const Dashboard = () => {
                 )}
                 {(userRole === 'admin' || userRole === 'employee') && (
                     <>
+                        <div className="stat-box clickable" onClick={() => setShowAdminApptList(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>All Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.allAppointments?.length || 0}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowDoctorModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #2ecc71'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Active Doctors</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.doctorCount}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowSystemHealth(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #e74c3c'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>System Health</h4><h2 style={{margin:0, color:'#2ecc71'}}>100%</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowPatientRecordsModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #f39c12'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Patient Records</h4><h2 style={{margin:0}}>📂</h2></div>
@@ -341,7 +343,6 @@ const Dashboard = () => {
             </div>
         </div>
 
-        {/* 5. RECENT ACTIVITY HISTORY */}
         <div className="history-section" style={{background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box'}}>
             <h3 style={{ color: '#444', borderBottom: '2px solid #f0f0f0', paddingBottom: '15px', marginBottom: '15px', marginTop: 0 }}>Recent Activity History</h3>
             <div className="history-list" style={{maxHeight: '250px', overflowY: 'auto', paddingRight: '10px'}}>
@@ -353,7 +354,6 @@ const Dashboard = () => {
                 ))}
             </div>
         </div>
-
       </div>
       <footer style={{ background: '#004d40', padding: '15px', textAlign: 'center' }}><button onClick={handleLogout} style={{ background: '#c62828', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight:'bold' }}>Logout</button></footer>
     </div>
