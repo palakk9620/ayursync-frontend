@@ -7,6 +7,7 @@ import '../App.css';
 // LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
+// ... [Keep timeOptions and EditProfileModal exactly as they were] ...
 const generateTimeOptions = () => {
   const options = [];
   for (let i = 0; i < 24 * 2; i++) {
@@ -25,7 +26,6 @@ const timeOptions = generateTimeOptions();
 
 const EditProfileModal = ({ show, onClose, formData, setFormData, onSave }) => {
   if (!show) return null;
-
   const splitTimings = formData.timings ? formData.timings.split(' - ') : [];
   const currentStart = splitTimings[0] || '09:00 AM';
   const currentEnd = splitTimings[1] || '05:00 PM';
@@ -44,31 +44,19 @@ const EditProfileModal = ({ show, onClose, formData, setFormData, onSave }) => {
             <h3>✏️ Edit Profile</h3>
             <button className="close-btn" onClick={onClose}>✖</button>
             <form onSubmit={onSave} style={{display:'flex', flexDirection:'column', gap:'15px', marginTop:'20px'}}>
+                <div><label>Doctor Name</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required style={{width:'100%', padding:'10px'}}/></div>
+                <div><label>Specialization</label><input type="text" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} required style={{width:'100%', padding:'10px'}}/></div>
+                <div><label>Clinic / Hospital Name</label><input type="text" value={formData.hospitalName} onChange={(e) => setFormData({...formData, hospitalName: e.target.value})} required style={{width:'100%', padding:'10px'}}/></div>
+                <div><label>Address</label><input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} required style={{width:'100%', padding:'10px'}}/></div>
                 <div>
-                    <label style={{fontWeight:'bold', fontSize:'0.9rem', color:'#555'}}>Doctor Name</label>
-                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{width:'100%', padding:'10px', borderRadius:'5px', border:'1px solid #ccc', marginTop:'5px'}} required />
-                </div>
-                <div>
-                    <label style={{fontWeight:'bold', fontSize:'0.9rem', color:'#555'}}>Specialization</label>
-                    <input type="text" placeholder="e.g. Cardiologist" value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} style={{width:'100%', padding:'10px', borderRadius:'5px', border:'1px solid #ccc', marginTop:'5px'}} required />
-                </div>
-                <div>
-                    <label style={{fontWeight:'bold', fontSize:'0.9rem', color:'#555'}}>Clinic / Hospital Name</label>
-                    <input type="text" value={formData.hospitalName} onChange={(e) => setFormData({...formData, hospitalName: e.target.value})} style={{width:'100%', padding:'10px', borderRadius:'5px', border:'1px solid #ccc', marginTop:'5px'}} required />
-                </div>
-                <div>
-                    <label style={{fontWeight:'bold', fontSize:'0.9rem', color:'#555'}}>Address</label>
-                    <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} style={{width:'100%', padding:'10px', borderRadius:'5px', border:'1px solid #ccc', marginTop:'5px'}} required />
-                </div>
-                <div>
-                    <label style={{fontWeight:'bold', fontSize:'0.9rem', color:'#555', display:'block', marginBottom:'5px'}}>Available Timings</label>
+                    <label>Available Timings</label>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <select value={currentStart} onChange={(e) => handleTimeChange('start', e.target.value)} style={{ width: '45%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}>{timeOptions.map(time => <option key={time} value={time}>{time}</option>)}</select>
-                        <span style={{ fontWeight: 'bold', color: '#666' }}>-</span>
-                        <select value={currentEnd} onChange={(e) => handleTimeChange('end', e.target.value)} style={{ width: '45%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}>{timeOptions.map(time => <option key={time} value={time}>{time}</option>)}</select>
+                        <select value={currentStart} onChange={(e) => handleTimeChange('start', e.target.value)} style={{ width: '45%', padding: '10px'}}>{timeOptions.map(time => <option key={time} value={time}>{time}</option>)}</select>
+                        <span>-</span>
+                        <select value={currentEnd} onChange={(e) => handleTimeChange('end', e.target.value)} style={{ width: '45%', padding: '10px'}}>{timeOptions.map(time => <option key={time} value={time}>{time}</option>)}</select>
                     </div>
                 </div>
-                <button type="submit" style={{padding:'12px', background:'#004d40', color:'white', border:'none', borderRadius:'5px', fontWeight:'bold', cursor:'pointer', marginTop:'10px'}}>Save Changes</button>
+                <button type="submit" style={{padding:'12px', background:'#004d40', color:'white', border:'none', borderRadius:'5px', cursor:'pointer', marginTop:'10px'}}>Save Changes</button>
             </form>
         </div>
     </div>
@@ -83,14 +71,12 @@ const Dashboard = () => {
   const [history, setHistory] = useState([]);
   const [doctorSearch, setDoctorSearch] = useState('');
 
-  // INITIAL STATE WITH SAFE DEFAULTS
   const [stats, setStats] = useState({
     doctorCount: 0, doctorsList: [], activeAppointment: null, pastAppointments: [], totalAppCount: 0,
     allAppointments: [], patientRecords: [], systemHealth: { status: 'Operational', uptime: '100%', database: 'Connected' },
     doctorActiveAppts: [], efficacyStats: { success: 0, missed: 0 }
   });
 
-  // MODAL STATES
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCurrentApptModal, setShowCurrentApptModal] = useState(false);
@@ -111,7 +97,6 @@ const Dashboard = () => {
     const storedRole = localStorage.getItem('userRole') || 'individual';
     const storedEmail = localStorage.getItem('userEmail'); 
     const welcomeType = localStorage.getItem('welcomeType'); 
-    // SAFE PARSING for history
     const storedHistory = JSON.parse(localStorage.getItem('userHistory')) || [];
     
     setHistory(storedHistory);
@@ -141,18 +126,14 @@ const Dashboard = () => {
         const response = await axios.post(`${RENDER_API_URL}/api/dashboard-stats`, { role, email });
         if (response.data.success) {
             const data = response.data.stats;
-            
-            // --- FILTER OUT DELETED DOCTORS ---
             const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
-            const rawDocs = data.active_doctors_list || []; // Handle null from backend
-            const cleanDoctorsList = rawDocs.filter(d => !deletedIds.includes(d.id));
+            const cleanDoctorsList = (data.active_doctors_list || []).filter(d => !deletedIds.includes(d.id));
             
-            // SAFE STATE UPDATES (Using || [] to prevent crashes)
             setStats({
                 ...data,
                 doctorCount: cleanDoctorsList.length,
                 doctorsList: cleanDoctorsList,
-                activeAppointment: data.active_appointment, 
+                activeAppointment: data.active_appointment, // Contains extra fields now
                 pastAppointments: data.past_appointments || [],
                 totalAppCount: data.total_app_count || 0,
                 allAppointments: data.all_appointments || [],
@@ -166,11 +147,9 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => { localStorage.clear(); navigate('/'); };
-
   const goToPage = (path, name) => {
     const now = new Date();
     const newEntry = { module: name, date: now.toLocaleDateString(), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    // SAFE HISTORY UPDATE
     const currentHistory = history || []; 
     const updatedHistory = [newEntry, ...currentHistory].slice(0, 10);
     setHistory(updatedHistory);
@@ -197,21 +176,99 @@ const Dashboard = () => {
       localStorage.setItem('address', editFormData.address);
       localStorage.setItem('timings', editFormData.timings);
       localStorage.setItem('doctorDetails', JSON.stringify(editFormData));
-
       setUserName(editFormData.name);
       setWelcomeMessage(`Welcome, Dr. ${editFormData.name}`);
-      
       try { await axios.post(`${RENDER_API_URL}/api/update-doctor-profile`, editFormData); } catch(err) {}
-
       alert("Profile Updated Successfully!");
       setShowEditProfileModal(false);
   };
 
-  // --- MODAL RENDERERS (Now using safe mapping ?.) ---
-  const MyRecordModal = () => ( <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>📂 My Medical Records</h3><button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments?.map((rec, i) => <div key={i} className="modal-item"><p><strong>{rec.date}</strong> - {rec.doctorName}</p><p>{rec.disease}</p></div>) || <p>No records</p>}</div></div></div> );
-  const DoctorListModal = () => ( <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Available Doctors</h3><button className="close-btn" onClick={()=>setShowDoctorModal(false)}>✖</button><div className="modal-list">{stats.doctorsList?.map((doc, i) => <div key={i} className="modal-item"><p>{doc.name}</p><button className="book-btn-small" onClick={()=>{setShowDoctorModal(false);navigate('/appointment')}}>Book</button></div>) || <p>No doctors</p>}</div></div></div> );
-  const CurrentApptModal = () => ( <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Current Status</h3><button className="close-btn" onClick={()=>setShowCurrentApptModal(false)}>✖</button><div style={{textAlign:'center'}}>{stats.activeAppointment ? <h2>Dr. {stats.activeAppointment.doctor}</h2> : <p>No Active Appointment</p>}</div></div></div> );
-  const HistoryModal = () => ( <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>History</h3><button className="close-btn" onClick={()=>setShowHistoryModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments?.map((a,i)=><div key={i} className="modal-item">{a.date}</div>) || <p>No history</p>}</div></div></div> );
+  // --- UPDATED MODAL RENDERERS ---
+
+  // 1. MY RECORDS (Show Doctor Name)
+  const MyRecordModal = () => ( 
+    <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}>
+        <div className="modal-content" onClick={e=>e.stopPropagation()}>
+            <h3>📂 My Medical Records</h3>
+            <button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button>
+            <div className="modal-list">
+                {stats.pastAppointments?.map((rec, i) => (
+                    <div key={i} className="modal-item">
+                        <p style={{fontWeight:'bold', color:'#004d40'}}>Dr. {rec.doctorName}</p>
+                        <p style={{fontSize:'0.9rem'}}>{rec.date} - {rec.time}</p>
+                        <p style={{fontSize:'0.9rem', color:'#555'}}>Disease: {rec.disease}</p>
+                    </div>
+                )) || <p>No records</p>}
+            </div>
+        </div>
+    </div> 
+  );
+
+  // 2. ACTIVE DOCTORS (Show Specialization under Name)
+  const DoctorListModal = () => ( 
+    <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}>
+        <div className="modal-content" onClick={e=>e.stopPropagation()}>
+            <h3>Available Doctors</h3>
+            <button className="close-btn" onClick={()=>setShowDoctorModal(false)}>✖</button>
+            <div className="modal-list">
+                {stats.doctorsList?.map((doc, i) => (
+                    <div key={i} className="modal-item">
+                        <div style={{textAlign:'left'}}>
+                            <h4 style={{margin:'0', color:'#004d40'}}>{doc.name}</h4>
+                            <p style={{margin:'5px 0', color:'#666', fontSize:'0.9rem'}}>{doc.specialization}</p>
+                            <small>📍 {doc.location}</small>
+                        </div>
+                        {userRole !== 'admin' && <button className="book-btn-small" onClick={()=>{setShowDoctorModal(false);navigate('/appointment')}}>Book</button>}
+                    </div>
+                )) || <p>No doctors</p>}
+            </div>
+        </div>
+    </div> 
+  );
+
+  // 3. CURRENT APPOINTMENT (Show Name, Disease, Time, Date)
+  const CurrentApptModal = () => ( 
+    <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}>
+        <div className="modal-content" onClick={e=>e.stopPropagation()}>
+            <h3>Current Appointment</h3>
+            <button className="close-btn" onClick={()=>setShowCurrentApptModal(false)}>✖</button>
+            <div style={{textAlign:'left', padding:'10px'}}>
+                {stats.activeAppointment ? (
+                    <>
+                        <div className="detail-row"><strong>Doctor:</strong> <span style={{color:'#004d40'}}>Dr. {stats.activeAppointment.doctor}</span></div>
+                        <div className="detail-row"><strong>Disease:</strong> {stats.activeAppointment.disease || 'General Checkup'}</div>
+                        <div className="detail-row"><strong>Date:</strong> {stats.activeAppointment.date}</div>
+                        <div className="detail-row"><strong>Time:</strong> {stats.activeAppointment.time}</div>
+                    </>
+                ) : (
+                    <div style={{textAlign:'center'}}>
+                        <p>No Active Appointment</p>
+                        <button className="book-btn-small" onClick={()=>{setShowCurrentApptModal(false);navigate('/appointment')}}>Book New</button>
+                    </div>
+                )}
+            </div>
+        </div>
+    </div> 
+  );
+
+  // 4. HISTORY (Show Date and Doctor Name)
+  const HistoryModal = () => ( 
+    <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}>
+        <div className="modal-content" onClick={e=>e.stopPropagation()}>
+            <h3>History</h3>
+            <button className="close-btn" onClick={()=>setShowHistoryModal(false)}>✖</button>
+            <div className="modal-list">
+                {stats.pastAppointments?.map((a,i) => (
+                    <div key={i} className="modal-item" style={{display:'flex', justifyContent:'space-between'}}>
+                        <span style={{fontWeight:'bold'}}>{a.date}</span>
+                        <span style={{color:'#004d40'}}>Dr. {a.doctorName}</span>
+                    </div>
+                )) || <p>No history</p>}
+            </div>
+        </div>
+    </div> 
+  );
+
   const AdminApptListModal = () => ( <div className="modal-overlay" onClick={() => setShowAdminApptList(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>All Appointments</h3><button className="close-btn" onClick={()=>setShowAdminApptList(false)}>✖</button><div className="modal-list">{stats.allAppointments?.map((a,i)=><div key={i} className="modal-item">{a.patient_name}</div>) || <p>No appointments</p>}</div></div></div> );
   const AdminApptDetailModal = () => ( <div className="modal-overlay" onClick={() => setShowApptDetail(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Details</h3><button className="close-btn" onClick={()=>setShowApptDetail(false)}>✖</button></div></div> );
   const SystemHealthModal = () => ( <div className="modal-overlay" onClick={() => setShowSystemHealth(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>System Health</h3><button className="close-btn" onClick={()=>setShowSystemHealth(false)}>✖</button><div style={{textAlign:'center'}}><h2>100% Operational</h2></div></div></div> );
@@ -220,9 +277,8 @@ const Dashboard = () => {
   const EfficacyModal = () => ( <div className="modal-overlay" onClick={() => setShowEfficacyModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Efficacy</h3><button className="close-btn" onClick={()=>setShowEfficacyModal(false)}>✖</button></div></div> );
 
   return (
+    // ... [Keeping layout same] ...
     <div className="dashboard-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f4f6f8' }}>
-      
-      {/* RENDER MODALS */}
       {showMyRecordModal && <MyRecordModal />}
       {showDoctorModal && <DoctorListModal />}
       {showCurrentApptModal && <CurrentApptModal />}
@@ -234,15 +290,8 @@ const Dashboard = () => {
       {showDocActiveModal && <DoctorActiveModal />}
       {showEfficacyModal && <EfficacyModal />}
       
-      <EditProfileModal 
-        show={showEditProfileModal} 
-        onClose={() => setShowEditProfileModal(false)} 
-        formData={editFormData} 
-        setFormData={setEditFormData} 
-        onSave={handleProfileUpdate} 
-      />
+      <EditProfileModal show={showEditProfileModal} onClose={() => setShowEditProfileModal(false)} formData={editFormData} setFormData={setEditFormData} onSave={handleProfileUpdate} />
 
-      {/* HEADER */}
       <header style={{ background: '#004d40', color: 'white', padding: '15px 30px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '1px' }}>🌿 AYURSYNC AI</h2>
         <div style={{ position: 'relative' }}>
@@ -250,7 +299,6 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* BODY */}
       <div className="dashboard-body" style={{ flex: 1, padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 style={{ color: '#004d40', margin: '0 0 10px 0' }}>{welcomeMessage}</h1>
@@ -285,7 +333,6 @@ const Dashboard = () => {
                 )}
                 {(userRole === 'admin' || userRole === 'employee') && (
                     <>
-                        <div className="stat-box clickable" onClick={() => setShowAdminApptList(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>All Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.allAppointments?.length || 0}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowDoctorModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #2ecc71'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Active Doctors</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.doctorCount}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowSystemHealth(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #e74c3c'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>System Health</h4><h2 style={{margin:0, color:'#2ecc71'}}>100%</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowPatientRecordsModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #f39c12'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Patient Records</h4><h2 style={{margin:0}}>📂</h2></div>
@@ -294,7 +341,7 @@ const Dashboard = () => {
             </div>
         </div>
 
-        {/* 5. RECENT ACTIVITY HISTORY - With Safety Check */}
+        {/* 5. RECENT ACTIVITY HISTORY */}
         <div className="history-section" style={{background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box'}}>
             <h3 style={{ color: '#444', borderBottom: '2px solid #f0f0f0', paddingBottom: '15px', marginBottom: '15px', marginTop: 0 }}>Recent Activity History</h3>
             <div className="history-list" style={{maxHeight: '250px', overflowY: 'auto', paddingRight: '10px'}}>
