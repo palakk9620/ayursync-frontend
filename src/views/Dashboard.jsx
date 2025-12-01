@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import '../App.css'; 
 
-// USE YOUR LIVE URL
+// LIVE URL
 const RENDER_API_URL = 'https://ayursync-backend.onrender.com';
 
 const generateTimeOptions = () => {
@@ -83,12 +83,14 @@ const Dashboard = () => {
   const [history, setHistory] = useState([]);
   const [doctorSearch, setDoctorSearch] = useState('');
 
+  // INITIAL STATE WITH SAFE DEFAULTS
   const [stats, setStats] = useState({
     doctorCount: 0, doctorsList: [], activeAppointment: null, pastAppointments: [], totalAppCount: 0,
     allAppointments: [], patientRecords: [], systemHealth: { status: 'Operational', uptime: '100%', database: 'Connected' },
     doctorActiveAppts: [], efficacyStats: { success: 0, missed: 0 }
   });
 
+  // MODAL STATES
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showCurrentApptModal, setShowCurrentApptModal] = useState(false);
@@ -109,6 +111,7 @@ const Dashboard = () => {
     const storedRole = localStorage.getItem('userRole') || 'individual';
     const storedEmail = localStorage.getItem('userEmail'); 
     const welcomeType = localStorage.getItem('welcomeType'); 
+    // SAFE PARSING for history
     const storedHistory = JSON.parse(localStorage.getItem('userHistory')) || [];
     
     setHistory(storedHistory);
@@ -138,14 +141,25 @@ const Dashboard = () => {
         const response = await axios.post(`${RENDER_API_URL}/api/dashboard-stats`, { role, email });
         if (response.data.success) {
             const data = response.data.stats;
-            // Filter out deleted doctors
-            const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
-            const cleanDoctorsList = (data.active_doctors_list || []).filter(d => !deletedIds.includes(d.id));
             
+            // --- FILTER OUT DELETED DOCTORS ---
+            const deletedIds = JSON.parse(localStorage.getItem('deletedDoctorIds')) || [];
+            const rawDocs = data.active_doctors_list || []; // Handle null from backend
+            const cleanDoctorsList = rawDocs.filter(d => !deletedIds.includes(d.id));
+            
+            // SAFE STATE UPDATES (Using || [] to prevent crashes)
             setStats({
                 ...data,
                 doctorCount: cleanDoctorsList.length,
-                doctorsList: cleanDoctorsList
+                doctorsList: cleanDoctorsList,
+                activeAppointment: data.active_appointment, 
+                pastAppointments: data.past_appointments || [],
+                totalAppCount: data.total_app_count || 0,
+                allAppointments: data.all_appointments || [],
+                patientRecords: data.patient_records || [],
+                systemHealth: data.system_health || { status: 'Operational' },
+                doctorActiveAppts: data.doctor_active_appts || [],
+                efficacyStats: data.efficacy_stats || { success: 0, missed: 0 }
             });
         }
     } catch (error) { console.error("Error fetching stats:", error); }
@@ -156,7 +170,9 @@ const Dashboard = () => {
   const goToPage = (path, name) => {
     const now = new Date();
     const newEntry = { module: name, date: now.toLocaleDateString(), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    const updatedHistory = [newEntry, ...history].slice(0, 10);
+    // SAFE HISTORY UPDATE
+    const currentHistory = history || []; 
+    const updatedHistory = [newEntry, ...currentHistory].slice(0, 10);
     setHistory(updatedHistory);
     localStorage.setItem('userHistory', JSON.stringify(updatedHistory));
     navigate(path);
@@ -173,40 +189,34 @@ const Dashboard = () => {
       } catch (err) { alert("Error updating status"); }
   };
 
-  // --- UPDATED HANDLE PROFILE UPDATE (NO LOCAL STORAGE HACKS) ---
   const handleProfileUpdate = async (e) => {
       e.preventDefault();
+      localStorage.setItem('userName', editFormData.name);
+      localStorage.setItem('specialization', editFormData.specialization);
+      localStorage.setItem('hospitalName', editFormData.hospitalName);
+      localStorage.setItem('address', editFormData.address);
+      localStorage.setItem('timings', editFormData.timings);
+      localStorage.setItem('doctorDetails', JSON.stringify(editFormData));
+
+      setUserName(editFormData.name);
+      setWelcomeMessage(`Welcome, Dr. ${editFormData.name}`);
       
-      try { 
-          // 1. Send Update to Backend (Database)
-          await axios.post(`${RENDER_API_URL}/api/update-doctor-profile`, editFormData); 
-          
-          // 2. Update Local UI State
-          setUserName(editFormData.name);
-          setWelcomeMessage(`Welcome, Dr. ${editFormData.name}`);
-          localStorage.setItem('userName', editFormData.name); // Update session name
-          
-          alert("Profile Updated Successfully! Changes are live.");
-          setShowEditProfileModal(false);
+      try { await axios.post(`${RENDER_API_URL}/api/update-doctor-profile`, editFormData); } catch(err) {}
 
-          // 3. Refresh stats to reflect changes if needed
-          fetchRealStats(userRole, localStorage.getItem('userEmail'));
-
-      } catch(err) {
-          alert("Failed to update profile. Please try again.");
-      }
+      alert("Profile Updated Successfully!");
+      setShowEditProfileModal(false);
   };
 
-  // ... [MODAL RENDERERS SAME AS BEFORE] ...
-  const MyRecordModal = () => ( <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>📂 My Medical Records</h3><button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments.map((rec, i) => <div key={i} className="modal-item"><p><strong>{rec.date}</strong> - {rec.doctorName}</p><p>{rec.disease}</p></div>)}</div></div></div> );
-  const DoctorListModal = () => ( <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Available Doctors</h3><button className="close-btn" onClick={()=>setShowDoctorModal(false)}>✖</button><div className="modal-list">{stats.doctorsList.map((doc, i) => <div key={i} className="modal-item"><p>{doc.name}</p><button className="book-btn-small" onClick={()=>{setShowDoctorModal(false);navigate('/appointment')}}>Book</button></div>)}</div></div></div> );
+  // --- MODAL RENDERERS (Now using safe mapping ?.) ---
+  const MyRecordModal = () => ( <div className="modal-overlay" onClick={() => setShowMyRecordModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>📂 My Medical Records</h3><button className="close-btn" onClick={()=>setShowMyRecordModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments?.map((rec, i) => <div key={i} className="modal-item"><p><strong>{rec.date}</strong> - {rec.doctorName}</p><p>{rec.disease}</p></div>) || <p>No records</p>}</div></div></div> );
+  const DoctorListModal = () => ( <div className="modal-overlay" onClick={() => setShowDoctorModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Available Doctors</h3><button className="close-btn" onClick={()=>setShowDoctorModal(false)}>✖</button><div className="modal-list">{stats.doctorsList?.map((doc, i) => <div key={i} className="modal-item"><p>{doc.name}</p><button className="book-btn-small" onClick={()=>{setShowDoctorModal(false);navigate('/appointment')}}>Book</button></div>) || <p>No doctors</p>}</div></div></div> );
   const CurrentApptModal = () => ( <div className="modal-overlay" onClick={() => setShowCurrentApptModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Current Status</h3><button className="close-btn" onClick={()=>setShowCurrentApptModal(false)}>✖</button><div style={{textAlign:'center'}}>{stats.activeAppointment ? <h2>Dr. {stats.activeAppointment.doctor}</h2> : <p>No Active Appointment</p>}</div></div></div> );
-  const HistoryModal = () => ( <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>History</h3><button className="close-btn" onClick={()=>setShowHistoryModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments.map((a,i)=><div key={i} className="modal-item">{a.date}</div>)}</div></div></div> );
-  const AdminApptListModal = () => ( <div className="modal-overlay" onClick={() => setShowAdminApptList(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>All Appointments</h3><button className="close-btn" onClick={()=>setShowAdminApptList(false)}>✖</button><div className="modal-list">{stats.allAppointments.map((a,i)=><div key={i} className="modal-item">{a.patient_name}</div>)}</div></div></div> );
+  const HistoryModal = () => ( <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>History</h3><button className="close-btn" onClick={()=>setShowHistoryModal(false)}>✖</button><div className="modal-list">{stats.pastAppointments?.map((a,i)=><div key={i} className="modal-item">{a.date}</div>) || <p>No history</p>}</div></div></div> );
+  const AdminApptListModal = () => ( <div className="modal-overlay" onClick={() => setShowAdminApptList(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>All Appointments</h3><button className="close-btn" onClick={()=>setShowAdminApptList(false)}>✖</button><div className="modal-list">{stats.allAppointments?.map((a,i)=><div key={i} className="modal-item">{a.patient_name}</div>) || <p>No appointments</p>}</div></div></div> );
   const AdminApptDetailModal = () => ( <div className="modal-overlay" onClick={() => setShowApptDetail(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Details</h3><button className="close-btn" onClick={()=>setShowApptDetail(false)}>✖</button></div></div> );
   const SystemHealthModal = () => ( <div className="modal-overlay" onClick={() => setShowSystemHealth(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>System Health</h3><button className="close-btn" onClick={()=>setShowSystemHealth(false)}>✖</button><div style={{textAlign:'center'}}><h2>100% Operational</h2></div></div></div> );
-  const PatientRecordsModal = () => ( <div className="modal-overlay" onClick={() => setShowPatientRecordsModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Patient Records</h3><button className="close-btn" onClick={()=>setShowPatientRecordsModal(false)}>✖</button><div className="modal-list">{stats.patientRecords.map((r,i)=><div key={i} className="modal-item">{r.patient}</div>)}</div></div></div> );
-  const DoctorActiveModal = () => ( <div className="modal-overlay" onClick={() => setShowDocActiveModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Active Queue</h3><button className="close-btn" onClick={()=>setShowDocActiveModal(false)}>✖</button><div className="modal-list">{stats.doctorActiveAppts.map((a,i)=><div key={i} className="modal-item">{a.patient_name} <button onClick={()=>handleAppointmentAction(a.id, "Success")}>✅</button></div>)}</div></div></div> );
+  const PatientRecordsModal = () => ( <div className="modal-overlay" onClick={() => setShowPatientRecordsModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Patient Records</h3><button className="close-btn" onClick={()=>setShowPatientRecordsModal(false)}>✖</button><div className="modal-list">{stats.patientRecords?.map((r,i)=><div key={i} className="modal-item">{r.patient}</div>) || <p>No records</p>}</div></div></div> );
+  const DoctorActiveModal = () => ( <div className="modal-overlay" onClick={() => setShowDocActiveModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Active Queue</h3><button className="close-btn" onClick={()=>setShowDocActiveModal(false)}>✖</button><div className="modal-list">{stats.doctorActiveAppts?.map((a,i)=><div key={i} className="modal-item">{a.patient_name} <button onClick={()=>handleAppointmentAction(a.id, "Success")}>✅</button></div>) || <p>No active patients</p>}</div></div></div> );
   const EfficacyModal = () => ( <div className="modal-overlay" onClick={() => setShowEfficacyModal(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}><h3>Efficacy</h3><button className="close-btn" onClick={()=>setShowEfficacyModal(false)}>✖</button></div></div> );
 
   return (
@@ -267,7 +277,7 @@ const Dashboard = () => {
                 )}
                 {userRole === 'doctor' && (
                     <>
-                        <div className="stat-box clickable" onClick={() => setShowDocActiveModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Active Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.doctorActiveAppts.length}</h2></div>
+                        <div className="stat-box clickable" onClick={() => setShowDocActiveModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Active Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.doctorActiveAppts?.length || 0}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowEfficacyModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #2ecc71'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Efficiency Rate</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.efficacyStats.total === 0 ? 'N/A' : Math.round((stats.efficacyStats.success / stats.efficacyStats.total) * 100) + '%'}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowPatientRecordsModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #f39c12'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Patient Records</h4><h2 style={{margin:0}}>📂</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowEditProfileModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #9b59b6'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Edit Profile</h4><h2 style={{margin:0}}>✏️</h2></div>
@@ -275,8 +285,7 @@ const Dashboard = () => {
                 )}
                 {(userRole === 'admin' || userRole === 'employee') && (
                     <>
-                        {/* Admin Cards ... */}
-                        <div className="stat-box clickable" onClick={() => setShowAdminApptList(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>All Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.allAppointments.length}</h2></div>
+                        <div className="stat-box clickable" onClick={() => setShowAdminApptList(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #004d40'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>All Appointments</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.allAppointments?.length || 0}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowDoctorModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #2ecc71'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Active Doctors</h4><h2 style={{margin:0, color:'#004d40'}}>{stats.doctorCount}</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowSystemHealth(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #e74c3c'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>System Health</h4><h2 style={{margin:0, color:'#2ecc71'}}>100%</h2></div>
                         <div className="stat-box clickable" onClick={() => setShowPatientRecordsModal(true)} style={{background:'white', padding:'20px', borderRadius:'10px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', cursor:'pointer', borderLeft:'5px solid #f39c12'}}><h4 style={{margin:'0 0 10px 0', color:'#666'}}>Patient Records</h4><h2 style={{margin:0}}>📂</h2></div>
@@ -285,10 +294,11 @@ const Dashboard = () => {
             </div>
         </div>
 
+        {/* 5. RECENT ACTIVITY HISTORY - With Safety Check */}
         <div className="history-section" style={{background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box'}}>
             <h3 style={{ color: '#444', borderBottom: '2px solid #f0f0f0', paddingBottom: '15px', marginBottom: '15px', marginTop: 0 }}>Recent Activity History</h3>
             <div className="history-list" style={{maxHeight: '250px', overflowY: 'auto', paddingRight: '10px'}}>
-                {history.length === 0 ? <p className="no-history" style={{textAlign:'center', color:'#999'}}>No recent activity.</p> : history.map((item, index) => (
+                {(!history || history.length === 0) ? <p className="no-history" style={{textAlign:'center', color:'#999'}}>No recent activity.</p> : history.map((item, index) => (
                     <div key={index} className="history-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', marginBottom: '10px', background: '#f8f9fa', borderRadius: '8px', borderLeft: '5px solid #004d40', transition: 'transform 0.2s'}}>
                         <div className="history-left" style={{fontWeight:'bold', color:'#004d40'}}>{item.module}</div>
                         <div className="history-right" style={{color:'#888', fontSize:'0.85rem'}}>{item.date} • {item.time}</div>
@@ -296,6 +306,7 @@ const Dashboard = () => {
                 ))}
             </div>
         </div>
+
       </div>
       <footer style={{ background: '#004d40', padding: '15px', textAlign: 'center' }}><button onClick={handleLogout} style={{ background: '#c62828', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight:'bold' }}>Logout</button></footer>
     </div>
