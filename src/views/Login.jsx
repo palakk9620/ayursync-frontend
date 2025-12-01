@@ -46,7 +46,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(true); 
-  const [loading, setLoading] = useState(false); // NEW: Loading State
+  const [loading, setLoading] = useState(false); 
 
   const [formData, setFormData] = useState(initialFormData);
 
@@ -132,7 +132,7 @@ const Login = () => {
             if (hasVisitedBefore) localStorage.setItem('welcomeType', 'back'); 
             else { localStorage.setItem('welcomeType', 'first'); localStorage.setItem('visited_' + userEmail, 'true'); }
 
-            // Navigate immediately (don't set loading false here to prevent UI flash)
+            // Navigate immediately
             navigate('/dashboard'); 
             return; 
         }
@@ -140,7 +140,7 @@ const Login = () => {
     } catch (error) {
       alert(error.response?.data?.message || "Connection Error");
     } finally {
-        // Only stop loading if we are NOT navigating (e.g. error or stay on register)
+        // Stop loading unless successful login redirected
         if (!isLogin || (isLogin && !localStorage.getItem('userEmail'))) {
              setLoading(false);
         }
@@ -161,7 +161,7 @@ const Login = () => {
           {!isLogin && (
             <div className="form-group">
               <label>Select Role:</label>
-              <select value={role} onChange={(e) => setRole(e.target.value)} disabled={loading}>
+              <select value={role} onChange={(e) => setRole(e.target.value)} disabled={loading} required>
                 <option value="individual">Individual</option>
                 <option value="doctor">Doctor</option>
                 <option value="admin">Admin</option>
